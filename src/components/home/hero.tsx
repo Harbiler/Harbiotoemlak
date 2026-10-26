@@ -20,23 +20,9 @@ export function HomeHero() {
         }}
         aria-hidden
       />
-      <div
-        className="absolute inset-0 opacity-[0.08]"
-        style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg width='72' height='72' viewBox='0 0 72 72' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M36 0L72 36 36 72 0 36z' fill='none' stroke='%23ffffff' stroke-width='1'/%3E%3C/svg%3E\")",
-        }}
-        aria-hidden
-      />
-
       <div className="relative mx-auto flex min-h-[min(92vh,780px)] max-w-6xl flex-col justify-end px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32">
-        <h1 className="hb-display max-w-3xl text-5xl font-extrabold leading-[0.92] tracking-tight text-white sm:text-7xl md:text-[5.5rem] animate-[fadeUp_0.75s_ease-out_both]">
-          Harbiden Bak
-        </h1>
-        <p className="mt-5 max-w-lg text-lg leading-relaxed text-white/85 sm:text-xl animate-[fadeUp_0.85s_ease-out_0.1s_both]">
-          Vasıta, emlak ve hizmet ilanları — Türkiye&apos;nin sınıflandırılmış pazaryeri.
-        </p>
-        <div className="mt-9 flex flex-wrap gap-3 animate-[fadeUp_0.95s_ease-out_0.18s_both]">
+        <h1 className="sr-only">Harbiden Bak</h1>
+        <div className="flex flex-wrap gap-3 animate-[fadeUp_0.95s_ease-out_both]">
           <Button
             asChild
             size="lg"
