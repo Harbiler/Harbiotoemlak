@@ -1,6 +1,11 @@
 "use client";
 
-import { CITY_NAMES, CITIES } from "@/lib/cities";
+import {
+  ALL_DISTRICT_OPTIONS,
+  CITY_NAMES,
+  districtOptionValue,
+  parseDistrictValue,
+} from "@/lib/cities";
 import { getCategory } from "@/lib/categories";
 import {
   brandNames,
@@ -96,16 +101,10 @@ export function ListingFilters({
   const city = isHepsi(value.city) ? HEPSI : value.city.normalize("NFC");
   const district = isHepsi(value.district) ? HEPSI : value.district;
   const sellerType = isHepsi(value.sellerType) ? HEPSI : value.sellerType;
-  const districts =
-    city !== HEPSI
-      ? CITIES[city] ?? CITIES[city.normalize("NFC")] ?? []
-      : [];
-  const allDistrictOptions = CITY_NAMES.flatMap((c) =>
-    (CITIES[c] ?? []).map((x) => ({
-      value: `${c}::${x}`,
-      label: `${x} (${c})`,
-    })),
-  );
+  const districtValue =
+    city !== HEPSI && district !== HEPSI
+      ? districtOptionValue(city, district)
+      : HEPSI;
   const category = categorySlug ? getCategory(categorySlug) : undefined;
   const showDetailed = categorySlug ? supportsDetailedSearch(categorySlug) : false;
   const showBrandModel = categorySlug ? supportsBrandModelSearch(categorySlug) : false;
@@ -234,32 +233,31 @@ export function ListingFilters({
       <div>
         <Label>İlçe</Label>
         <NativeSelect
-          key={`ilce-${city}`}
           className="mt-1.5"
-          value={
-            city === HEPSI && district !== HEPSI
-              ? `${
-                  CITY_NAMES.find((c) => (CITIES[c] ?? []).includes(district)) ??
-                  ""
-                }::${district}`
-              : district
-          }
+          value={districtValue}
           onChange={(next) => {
-            if (next.includes("::")) {
-              const [c, x] = next.split("::");
-              onChange({ ...value, city: c || HEPSI, district: x || HEPSI });
+            if (isHepsi(next)) {
+              onChange({ ...value, district: HEPSI });
               return;
             }
-            onChange({ ...value, district: next || HEPSI });
+            const parsed = parseDistrictValue(next);
+            if (!parsed) {
+              onChange({ ...value, district: next || HEPSI });
+              return;
+            }
+            onChange({
+              ...value,
+              city: parsed.city,
+              district: parsed.district,
+            });
           }}
-          options={
-            city === HEPSI
-              ? [{ value: HEPSI, label: "Tüm ilçeler" }, ...allDistrictOptions]
-              : [
-                  { value: HEPSI, label: "Tüm ilçeler" },
-                  ...districts.map((d) => ({ value: d, label: d })),
-                ]
-          }
+          options={[
+            { value: HEPSI, label: "Tüm ilçeler" },
+            ...ALL_DISTRICT_OPTIONS.map((o) => ({
+              value: o.value,
+              label: o.label,
+            })),
+          ]}
         />
       </div>
       <div>

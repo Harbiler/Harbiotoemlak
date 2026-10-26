@@ -1044,3 +1044,43 @@ export const CITIES: Record<string, string[]> = {
 export const CITY_NAMES = Object.keys(CITIES).sort((a, b) =>
   a.localeCompare(b, "tr"),
 );
+
+export type DistrictOption = { value: string; label: string; city: string; district: string };
+
+/** Türkiye’deki tüm ilçeler — value: `İl::İlçe` (benzersiz). */
+export const ALL_DISTRICT_OPTIONS: DistrictOption[] = (() => {
+  const nameCount = new Map<string, number>();
+  for (const city of CITY_NAMES) {
+    for (const district of CITIES[city] ?? []) {
+      nameCount.set(district, (nameCount.get(district) ?? 0) + 1);
+    }
+  }
+
+  const options: DistrictOption[] = [];
+  for (const city of CITY_NAMES) {
+    for (const district of CITIES[city] ?? []) {
+      const duplicate = (nameCount.get(district) ?? 0) > 1;
+      options.push({
+        value: `${city}::${district}`,
+        label: duplicate ? `${district} (${city})` : district,
+        city,
+        district,
+      });
+    }
+  }
+
+  return options.sort((a, b) => a.label.localeCompare(b.label, "tr"));
+})();
+
+export function parseDistrictValue(
+  raw: string,
+): { city: string; district: string } | null {
+  if (!raw || !raw.includes("::")) return null;
+  const [city, district] = raw.split("::");
+  if (!city || !district) return null;
+  return { city, district };
+}
+
+export function districtOptionValue(city: string, district: string): string {
+  return `${city}::${district}`;
+}
