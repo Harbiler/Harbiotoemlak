@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { CATEGORIES } from "@/lib/categories";
+import { BrandLogo } from "@/components/brand-logo";
 
 export function SiteFooter() {
   return (
-    <footer className="mt-auto border-t border-[color-mix(in_oklab,#0b2a33_8%,transparent)] bg-[var(--ink)] text-white">
+    <footer className="mt-auto border-t border-[color-mix(in_oklab,#9d174d_20%,transparent)] bg-[linear-gradient(160deg,#4a1830_0%,#831843_48%,#be185d_100%)] text-white">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-2 lg:grid-cols-4">
         <div className="lg:col-span-1">
-          <p className="hb-display text-2xl font-extrabold">Harbiden Bak</p>
+          <BrandLogo inverted wordmarkClassName="text-2xl sm:text-2xl" />
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-white/65">
             Otomobil ve emlak odaklı sınıflandırılmış ilan sitesi. Güvenilir satıcılar, net
             kategoriler, tek adres.

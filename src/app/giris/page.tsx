@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Shield } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
 
 function LoginInner() {
   const { login, user, ready } = useAuth();
@@ -39,16 +40,16 @@ function LoginInner() {
 
   return (
     <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 lg:grid-cols-2 sm:px-6">
-      <div className="relative overflow-hidden rounded-[1.75rem] bg-[var(--ink)] px-8 py-12 text-white">
+      <div className="relative overflow-hidden rounded-[1.75rem] bg-[linear-gradient(160deg,#4a1830_0%,#9d174d_45%,#db2777_100%)] px-8 py-12 text-white">
         <div
           className="absolute inset-0 opacity-50"
           style={{
             backgroundImage:
-              "radial-gradient(ellipse at 80% 20%, rgba(13,110,110,0.55), transparent 50%)",
+              "radial-gradient(ellipse at 80% 20%, rgba(251,207,232,0.45), transparent 50%)",
           }}
         />
         <div className="relative">
-          <p className="hb-display text-4xl font-extrabold">Harbiden Bak</p>
+          <BrandLogo inverted markClassName="size-11 sm:size-12" wordmarkClassName="text-4xl sm:text-4xl" />
           <p className="mt-4 max-w-sm text-white/70">
             Hesabınıza giriş yapın; ilan verin, favorilerinizi yönetin veya kurumsal portföyünüzü
             güncelleyin.
@@ -106,7 +107,7 @@ function LoginInner() {
               autoComplete="current-password"
             />
           </div>
-          <Button type="submit" className="w-full bg-[var(--lagoon)] hover:bg-[#0a5a5a]">
+          <Button type="submit" className="w-full bg-[var(--lagoon)] hover:bg-[#be185d]">
             Giriş Yap
           </Button>
         </form>

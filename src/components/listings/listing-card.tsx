@@ -16,10 +16,10 @@ export function ListingCard({ listing }: { listing: Listing }) {
       href={`/ilan/${listing.id}`}
       className={cn(
         "group flex flex-col overflow-hidden rounded-2xl border bg-white/90 transition duration-300",
-        "hover:-translate-y-1 hover:shadow-[0_12px_40px_-16px_rgba(11,42,51,0.25)]",
+        "hover:-translate-y-1 hover:shadow-[0_12px_40px_-16px_rgba(190,24,93,0.28)]",
         isCorporate
-          ? "border-[color-mix(in_oklab,#0d6e6e_22%,transparent)] ring-1 ring-[color-mix(in_oklab,#0d6e6e_8%,transparent)]"
-          : "border-[color-mix(in_oklab,#0b2a33_8%,transparent)]",
+          ? "border-[color-mix(in_oklab,#db2777_22%,transparent)] ring-1 ring-[color-mix(in_oklab,#db2777_8%,transparent)] bg-[color-mix(in_oklab,#fff7fa_88%,#fce7f0)]"
+          : "border-[color-mix(in_oklab,var(--lagoon)_14%,transparent)] bg-[color-mix(in_oklab,#ffffff_86%,#fce7f0)]",
       )}
     >
       <div className="relative overflow-hidden">
@@ -29,7 +29,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
           className="aspect-[16/10] w-full transition duration-500 ease-out group-hover:scale-[1.03]"
         />
         {listing.featured && (
-          <span className="absolute bottom-2 left-2 rounded-md bg-[var(--ink)]/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
+          <span className="absolute bottom-2 left-2 rounded-md bg-[var(--lagoon)]/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
             Öne çıkan
           </span>
         )}

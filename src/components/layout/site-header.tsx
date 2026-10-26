@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CategoryIcon } from "@/components/category-icon";
+import { BrandLogo } from "@/components/brand-logo";
 import { FormEvent, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +41,7 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[color-mix(in_oklab,#0b2a33_8%,transparent)] bg-[color-mix(in_oklab,#f3f6f7_88%,transparent)] backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-[color-mix(in_oklab,var(--lagoon)_14%,transparent)] bg-[color-mix(in_oklab,#fdf4f7_88%,transparent)] backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
         <div className="flex items-center gap-2">
           <Sheet open={open} onOpenChange={setOpen}>
@@ -87,10 +88,8 @@ export function SiteHeader() {
             </SheetContent>
           </Sheet>
 
-          <Link href="/" className="group flex items-baseline gap-1.5">
-            <span className="hb-display text-xl font-extrabold tracking-tight text-[var(--ink)] sm:text-2xl transition group-hover:text-[var(--lagoon)]">
-              Harbiden Bak
-            </span>
+          <Link href="/" className="group transition hover:opacity-90">
+            <BrandLogo />
           </Link>
         </div>
 
@@ -103,7 +102,7 @@ export function SiteHeader() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Kelime, marka veya konum ara…"
-            className="h-9 border-[color-mix(in_oklab,#0b2a33_10%,transparent)] bg-white/90 pl-9"
+            className="h-9 border-[color-mix(in_oklab,var(--lagoon)_16%,transparent)] bg-white/90 pl-9"
             aria-label="İlan ara"
           />
         </form>
@@ -153,7 +152,7 @@ export function SiteHeader() {
               <Button
                 asChild
                 size="sm"
-                className="hidden bg-[var(--lagoon)] hover:bg-[#0a5a5a] sm:inline-flex"
+                className="hidden bg-[var(--lagoon)] hover:bg-[#be185d] sm:inline-flex"
               >
                 <Link href="/ilan/yeni">
                   <Plus className="size-4" />
@@ -203,7 +202,7 @@ export function SiteHeader() {
               <Button asChild variant="ghost" size="sm">
                 <Link href="/giris">Giriş Yap</Link>
               </Button>
-              <Button asChild size="sm" className="bg-[var(--lagoon)] hover:bg-[#0a5a5a]">
+              <Button asChild size="sm" className="bg-[var(--lagoon)] hover:bg-[#be185d]">
                 <Link href="/uye-ol">Üye Ol</Link>
               </Button>
             </>

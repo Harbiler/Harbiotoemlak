@@ -44,7 +44,7 @@ export default function CategoryPage({
         <p className="mt-2 text-[var(--muted-foreground)]">
           Bu kategori Harbiden Bak&apos;ta yok.
         </p>
-        <Button asChild className="mt-6 bg-[var(--lagoon)] hover:bg-[#0a5a5a]">
+        <Button asChild className="mt-6 bg-[var(--lagoon)] hover:bg-[#be185d]">
           <Link href="/">Ana sayfa</Link>
         </Button>
       </div>
@@ -54,7 +54,7 @@ export default function CategoryPage({
   return (
     <div>
       <div
-        className="border-b border-[color-mix(in_oklab,#0b2a33_8%,transparent)]"
+        className="border-b border-[color-mix(in_oklab,var(--ink)_8%,transparent)]"
         style={{
           background: `linear-gradient(120deg, ${category.accent}22, transparent 55%)`,
         }}
@@ -74,7 +74,7 @@ export default function CategoryPage({
               <p className="mt-1 max-w-xl text-[var(--muted-foreground)]">{category.description}</p>
             </div>
           </div>
-          <Button asChild className="bg-[var(--lagoon)] hover:bg-[#0a5a5a]">
+          <Button asChild className="bg-[var(--lagoon)] hover:bg-[#be185d]">
             <Link href={`/ilan/yeni?kategori=${category.slug}`}>
               <Plus className="size-4" />
               Bu kategoride ilan ver

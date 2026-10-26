@@ -13,8 +13,8 @@ export function SellerBadge({
     <span
       className={cn(
         "inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold tracking-wide",
-        badge === "galeri" && "bg-[#1a567a]/12 text-[#1a567a]",
-        badge === "emlak" && "bg-[#0d6e6e]/12 text-[#0a5555]",
+        badge === "galeri" && "bg-[#be185d]/12 text-[#be185d]",
+        badge === "emlak" && "bg-[#db2777]/12 text-[#9d174d]",
         badge === "bireysel" && "bg-[var(--mist)] text-[var(--muted-foreground)]",
         className,
       )}

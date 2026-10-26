@@ -25,7 +25,7 @@ export default function HomePage() {
     <>
       <HomeHero />
       <CategoryGrid />
-      <section className="border-t border-[color-mix(in_oklab,#0b2a33_6%,transparent)] py-20">
+      <section className="border-t border-[color-mix(in_oklab,var(--ink)_6%,transparent)] py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
@@ -72,12 +72,12 @@ export default function HomePage() {
       )}
 
       <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
-        <div className="relative overflow-hidden rounded-[1.75rem] bg-[var(--ink)] px-6 py-14 text-white sm:px-12">
+        <div className="relative overflow-hidden rounded-[1.75rem] bg-[linear-gradient(160deg,#4a1830_0%,#9d174d_42%,#db2777_100%)] px-6 py-14 text-white sm:px-12">
           <div
             className="pointer-events-none absolute inset-0 opacity-40"
             style={{
               backgroundImage:
-                "radial-gradient(ellipse at 80% 20%, rgba(13,110,110,0.55), transparent 50%)",
+                "radial-gradient(ellipse at 80% 20%, rgba(251,207,232,0.45), transparent 50%)",
             }}
           />
           <div className="relative max-w-xl">

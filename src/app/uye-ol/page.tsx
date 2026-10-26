@@ -81,8 +81,8 @@ export default function RegisterPage() {
                 className={cn(
                   "rounded-xl border px-4 py-3 text-left transition",
                   membershipKind === opt.id
-                    ? "border-teal-700 bg-teal-900/5 ring-2 ring-teal-700/30"
-                    : "border-teal-900/10 bg-white/50 hover:border-teal-800/25",
+                    ? "border-pink-600 bg-pink-800/5 ring-2 ring-pink-600/30"
+                    : "border-pink-900/10 bg-white/50 hover:border-pink-700/25",
                 )}
               >
                 <p className="font-semibold text-stone-900">{opt.label}</p>
@@ -109,8 +109,8 @@ export default function RegisterPage() {
                   className={cn(
                     "rounded-xl border px-4 py-3 text-left transition",
                     kurumsalType === opt.id
-                      ? "border-teal-700 bg-teal-900/5 ring-2 ring-teal-700/30"
-                      : "border-teal-900/10 bg-white/50 hover:border-teal-800/25",
+                      ? "border-pink-600 bg-pink-800/5 ring-2 ring-pink-600/30"
+                      : "border-pink-900/10 bg-white/50 hover:border-pink-700/25",
                   )}
                 >
                   <p className="font-semibold text-stone-900">{opt.label}</p>
@@ -177,7 +177,7 @@ export default function RegisterPage() {
           />
         </div>
 
-        <Button type="submit" className="w-full bg-[var(--lagoon)] hover:bg-[#0a5a5a]">
+        <Button type="submit" className="w-full bg-[var(--lagoon)] hover:bg-[#be185d]">
           Kayıt ol
         </Button>
       </form>

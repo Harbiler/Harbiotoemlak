@@ -221,7 +221,7 @@ function NewListingWizard() {
                   "flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition hover:border-[var(--lagoon)] hover:bg-white",
                   draft.category === c.slug
                     ? "border-[var(--lagoon)] bg-white ring-2 ring-[var(--lagoon)]/20"
-                    : "border-[color-mix(in_oklab,#0b2a33_10%,transparent)] bg-white/50",
+                    : "border-[color-mix(in_oklab,var(--ink)_10%,transparent)] bg-white/50",
                 )}
               >
                 <span
@@ -407,7 +407,7 @@ function NewListingWizard() {
             </Button>
             <Button
               type="button"
-              className="bg-[var(--lagoon)] hover:bg-[#0a5a5a]"
+              className="bg-[var(--lagoon)] hover:bg-[#be185d]"
               onClick={() => {
                 const err = validateForm();
                 if (err) setError(err);
@@ -461,7 +461,7 @@ function NewListingWizard() {
             </Button>
             <Button
               type="button"
-              className="bg-[var(--lagoon)] hover:bg-[#0a5a5a]"
+              className="bg-[var(--lagoon)] hover:bg-[#be185d]"
               onClick={publish}
             >
               Yayınla

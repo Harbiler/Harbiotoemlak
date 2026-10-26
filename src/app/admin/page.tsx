@@ -106,7 +106,7 @@ export default function AdminPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button asChild className="bg-[var(--lagoon)] hover:bg-[#0a5a5a]">
+          <Button asChild className="bg-[var(--lagoon)] hover:bg-[#be185d]">
             <Link href="/ilan/yeni">
               <Plus className="size-4" />
               Yeni ilan
@@ -207,7 +207,7 @@ export default function AdminPage() {
                       <TableCell>
                         <Link
                           href={`/ilan/${l.id}`}
-                          className="font-medium text-teal-950 hover:underline"
+                          className="font-medium text-pink-950 hover:underline"
                         >
                           {l.title}
                         </Link>
@@ -241,7 +241,7 @@ export default function AdminPage() {
                               title="Onayla"
                               onClick={() => setStatus(l.id, "approved")}
                             >
-                              <Check className="size-4 text-teal-700" />
+                              <Check className="size-4 text-pink-700" />
                             </Button>
                           )}
                           {l.status !== "hidden" && (

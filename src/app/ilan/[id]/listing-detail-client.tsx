@@ -202,7 +202,7 @@ export function ListingDetailClient({ id }: { id: string }) {
 
           {Object.keys(listing.fields).length > 0 && (
             <div className="hb-surface mt-8 overflow-hidden">
-              <h2 className="border-b border-[color-mix(in_oklab,#0b2a33_8%,transparent)] px-4 py-3 font-semibold text-[var(--ink)]">
+              <h2 className="border-b border-[color-mix(in_oklab,var(--ink)_8%,transparent)] px-4 py-3 font-semibold text-[var(--ink)]">
                 İlan özellikleri
               </h2>
               <dl className="grid sm:grid-cols-2">
@@ -212,7 +212,7 @@ export function ListingDetailClient({ id }: { id: string }) {
                   return (
                     <div
                       key={field.key}
-                      className="grid grid-cols-2 gap-2 border-b border-[color-mix(in_oklab,#0b2a33_6%,transparent)] px-4 py-3 text-sm last:border-b-0"
+                      className="grid grid-cols-2 gap-2 border-b border-[color-mix(in_oklab,var(--ink)_6%,transparent)] px-4 py-3 text-sm last:border-b-0"
                     >
                       <dt className="text-[var(--muted-foreground)]">{field.label}</dt>
                       <dd className="font-medium text-[var(--ink)]">{String(val)}</dd>
@@ -242,7 +242,7 @@ export function ListingDetailClient({ id }: { id: string }) {
             <p className="hb-display mt-1 text-3xl font-bold text-[var(--ink)]">
               {formatPrice(listing.price)}
             </p>
-            <div className="mt-5 border-t border-[color-mix(in_oklab,#0b2a33_8%,transparent)] pt-4">
+            <div className="mt-5 border-t border-[color-mix(in_oklab,var(--ink)_8%,transparent)] pt-4">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="font-semibold text-[var(--ink)]">{listing.contactName}</p>
@@ -255,7 +255,7 @@ export function ListingDetailClient({ id }: { id: string }) {
                 İlan no: {ilanNo} · {formatDate(listing.createdAt)}
               </p>
               <Button
-                className="mt-4 w-full bg-[var(--lagoon)] hover:bg-[#0a5a5a]"
+                className="mt-4 w-full bg-[var(--lagoon)] hover:bg-[#be185d]"
                 onClick={() => setShowPhone(true)}
               >
                 <Phone className="size-4" />

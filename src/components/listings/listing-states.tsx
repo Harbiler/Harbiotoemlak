@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export function ListingsLoading() {
   return (
-    <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[color-mix(in_oklab,#0b2a33_12%,transparent)] bg-white/50 px-6 py-12 text-center">
+    <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[color-mix(in_oklab,var(--ink)_12%,transparent)] bg-white/50 px-6 py-12 text-center">
       <Loader2 className="size-8 animate-spin text-[var(--lagoon)]" />
       <p className="text-sm text-[var(--muted-foreground)]">İlanlar yükleniyor…</p>
     </div>
@@ -21,14 +21,14 @@ export function ListingsEmpty({
   showCta?: boolean;
 }) {
   return (
-    <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[color-mix(in_oklab,#0b2a33_12%,transparent)] bg-white/50 px-6 py-12 text-center">
+    <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[color-mix(in_oklab,var(--ink)_12%,transparent)] bg-white/50 px-6 py-12 text-center">
       <Inbox className="size-10 text-[var(--lagoon)]/50" />
       <div>
         <p className="font-semibold text-[var(--ink)]">{title}</p>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">{hint}</p>
       </div>
       {showCta && (
-        <Button asChild className="mt-2 bg-[var(--lagoon)] hover:bg-[#0a5a5a]">
+        <Button asChild className="mt-2 bg-[var(--lagoon)] hover:bg-[#be185d]">
           <Link href="/ilan/yeni">İlan Ver</Link>
         </Button>
       )}
