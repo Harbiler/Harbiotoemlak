@@ -509,17 +509,17 @@ export const HIDDEN_NAV_CATEGORY_SLUGS = new Set([
 ]);
 
 /**
- * Homepage / nav order.
- * Evcil Hayvan Otelleri sits left of İş Makineleri; Bakıcı Arayanlar sits right of Evcil Hayvan Otelleri.
+ * Homepage / nav order (4-col desktop).
+ * Row starts so Evcil Hayvan Otelleri | Bakıcı Arayanlar | İş Makineleri sit side by side.
  */
 export const NAV_CATEGORY_ORDER: CategorySlug[] = [
   "emlak",
   "vasita",
   "yedek-parca",
+  "ustalar",
   "evcil-hayvan-otelleri",
   "bakici-arayanlar",
   "is-makineleri",
-  "ustalar",
   "yardimci-arayanlar",
   "is-ilanlari",
 ];
