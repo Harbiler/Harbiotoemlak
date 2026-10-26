@@ -6,7 +6,7 @@ const LISTINGS_KEY = "harbidenbak.listings";
 const SESSION_KEY = "harbidenbak.session";
 const PET_HOTEL_APPS_KEY = "harbidenbak.petHotelApplications";
 const VERSION_KEY = "harbidenbak.seedVersion";
-const SEED_VERSION = "11";
+const SEED_VERSION = "12";
 
 function canUseStorage(): boolean {
   return typeof window !== "undefined" && !!window.localStorage;
@@ -48,7 +48,17 @@ export function loadListings(): Listing[] {
   ensureSeedData();
   if (!canUseStorage()) return SEED_LISTINGS;
   try {
-    return JSON.parse(localStorage.getItem(LISTINGS_KEY) || "[]") as Listing[];
+    const listings = JSON.parse(
+      localStorage.getItem(LISTINGS_KEY) || "[]",
+    ) as Listing[];
+    let changed = false;
+    const next = listings.map((l) => {
+      if (l.status !== "pending") return l;
+      changed = true;
+      return { ...l, status: "approved" as const };
+    });
+    if (changed) saveListings(next);
+    return next;
   } catch {
     return SEED_LISTINGS;
   }
@@ -73,7 +83,17 @@ export function saveSessionUserId(userId: string | null): void {
 export function loadPetHotelApplications(): PetHotelApplication[] {
   if (!canUseStorage()) return [];
   try {
-    return JSON.parse(localStorage.getItem(PET_HOTEL_APPS_KEY) || "[]") as PetHotelApplication[];
+    const apps = JSON.parse(
+      localStorage.getItem(PET_HOTEL_APPS_KEY) || "[]",
+    ) as PetHotelApplication[];
+    let changed = false;
+    const next = apps.map((a) => {
+      if (a.status !== "pending") return a;
+      changed = true;
+      return { ...a, status: "reviewed" as const };
+    });
+    if (changed) savePetHotelApplications(next);
+    return next;
   } catch {
     return [];
   }
@@ -90,12 +110,25 @@ export function addPetHotelApplication(
   const next: PetHotelApplication = {
     ...app,
     id: `pet-hotel-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    status: "pending",
+    status: "reviewed",
     createdAt: new Date().toISOString(),
   };
   const apps = loadPetHotelApplications();
   apps.unshift(next);
   savePetHotelApplications(apps);
+  return next;
+}
+
+/** Auto-approve any leftover pending pet-hotel applications. */
+export function approvePendingPetHotelApplications(): PetHotelApplication[] {
+  const apps = loadPetHotelApplications();
+  let changed = false;
+  const next = apps.map((a) => {
+    if (a.status !== "pending") return a;
+    changed = true;
+    return { ...a, status: "reviewed" as const };
+  });
+  if (changed) savePetHotelApplications(next);
   return next;
 }
 

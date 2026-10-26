@@ -8,6 +8,7 @@ import { useListings } from "@/context/listings-context";
 import { getCategory, CATEGORIES } from "@/lib/categories";
 import { formatPrice } from "@/lib/format";
 import {
+  approvePendingPetHotelApplications,
   loadPetHotelApplications,
   updatePetHotelApplicationStatus,
 } from "@/lib/storage";
@@ -91,12 +92,12 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (ready && user?.role === "admin") {
-      setPetApps(loadPetHotelApplications());
+      setPetApps(approvePendingPetHotelApplications());
     }
   }, [ready, user]);
 
   function refreshPetApps() {
-    setPetApps(loadPetHotelApplications());
+    setPetApps(approvePendingPetHotelApplications());
   }
 
   const filtered = useMemo(() => {

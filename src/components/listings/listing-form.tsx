@@ -68,7 +68,7 @@ function buildInitial(listing?: Listing, defaultCategory?: CategorySlug, userNam
     contactName: userName ?? "",
     contactPhone: userPhone ?? "",
     fields: {},
-    status: "pending",
+    status: "approved",
   };
 }
 
@@ -198,7 +198,7 @@ export function ListingForm({
       ? form.status
       : listing
         ? listing.status
-        : "pending";
+        : "approved";
 
     const payload = {
       category: form.category,
@@ -213,7 +213,7 @@ export function ListingForm({
       sellerType,
       sellerKurumsalType: listing?.sellerKurumsalType ?? user.kurumsalType,
       sellerId: listing?.sellerId ?? user.id,
-      status: adminMode || user.role === "admin" ? status : "pending",
+      status: adminMode ? status : listing ? listing.status : "approved",
       featured: listing?.featured,
       fields: parsedFields,
     };
@@ -223,11 +223,7 @@ export function ListingForm({
       router.push(adminMode ? "/admin" : `/ilan/${listing.id}`);
     } else {
       const created = createListing(payload);
-      router.push(
-        user.role === "admin" || adminMode
-          ? `/ilan/${created.id}`
-          : `/ilan/${created.id}?pending=1`,
-      );
+      router.push(`/ilan/${created.id}`);
     }
   }
 
@@ -498,7 +494,7 @@ export function ListingForm({
       </div>
       {!listing && user?.role !== "admin" && (
         <p className="text-xs text-stone-500">
-          Yeni ilanlar admin onayından sonra yayına alınır. Demo admin hesabıyla anında onaylayabilirsiniz.
+          Yeni ilanlar otomatik olarak onaylanır ve hemen yayına alınır.
         </p>
       )}
     </form>

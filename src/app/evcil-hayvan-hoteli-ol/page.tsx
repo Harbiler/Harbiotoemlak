@@ -94,11 +94,11 @@ export default function PetHotelApplyPage() {
             <Hotel className="size-7" />
           </div>
           <h1 className="hb-display text-2xl font-bold text-[var(--ink)]">
-            Başvurunuz alındı
+            Başvurunuz onaylandı
           </h1>
           <p className="text-[var(--muted-foreground)]">
-            Evcil hayvan hoteli başvurunuz incelenecek. Belgeleriniz ve iletişim
-            bilgileriniz kaydedildi.
+            Evcil hayvan hoteli başvurunuz otomatik olarak onaylandı.
+            Belgeleriniz ve iletişim bilgileriniz kaydedildi.
           </p>
           <div className="flex flex-wrap justify-center gap-3 pt-2">
             <Button asChild className="bg-[var(--lagoon)] hover:bg-[#be185d]">

@@ -1036,7 +1036,7 @@ export const SEED_LISTINGS: Listing[] = [
     contactPhone: "0500 000 00 00",
     sellerType: "bireysel",
     sellerId: "u-admin",
-    status: "pending",
+    status: "approved",
     createdAt: daysAgo(1),
     updatedAt: daysAgo(1),
     fields: {

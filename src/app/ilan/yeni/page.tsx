@@ -155,7 +155,7 @@ function NewListingWizard() {
     if (draft.category === "vasita" && draft.fields.altKategori) {
       parsedFields.altKategori = draft.fields.altKategori;
     }
-    const status: ListingStatus = user.role === "admin" ? "approved" : "pending";
+    const status: ListingStatus = "approved";
     const created = createListing({
       category: draft.category,
       title: draft.title.trim(),
@@ -174,11 +174,7 @@ function NewListingWizard() {
     });
     setStep("yayin");
     setTimeout(() => {
-      router.push(
-        status === "pending"
-          ? `/ilan/${created.id}?pending=1`
-          : `/ilan/${created.id}`,
-      );
+      router.push(`/ilan/${created.id}`);
     }, 900);
   }
 
@@ -556,11 +552,9 @@ function NewListingWizard() {
               <Check className="size-4" />
             </Button>
           </div>
-          {user.role !== "admin" && (
-            <p className="text-xs text-[var(--muted-foreground)]">
-              İlanınız admin onayından sonra yayına alınır (durum: Beklemede).
-            </p>
-          )}
+          <p className="text-xs text-[var(--muted-foreground)]">
+            İlanınız otomatik onaylanır ve hemen yayına alınır.
+          </p>
         </div>
       )}
 
@@ -570,7 +564,7 @@ function NewListingWizard() {
             <Check className="size-7" />
           </div>
           <h2 className="hb-display mt-4 text-2xl font-bold text-[var(--ink)]">
-            İlan gönderildi
+            İlan onaylandı
           </h2>
           <p className="mt-2 text-[var(--muted-foreground)]">Detay sayfasına yönlendiriliyorsunuz…</p>
           <Button asChild variant="outline" className="mt-6">
