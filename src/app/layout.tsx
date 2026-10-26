@@ -19,12 +19,16 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.harbidenbak.com"),
   title: {
     default: "Harbiden Bak — Otomobil & Emlak İlanları",
     template: "%s · Harbiden Bak",
   },
   description:
     "Harbiden Bak: Türkiye'nin otomobil, emlak ve sınıflandırılmış ilan sitesi. Vasıta, emlak, hizmet ve iş ilanları.",
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
