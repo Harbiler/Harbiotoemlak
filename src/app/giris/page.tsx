@@ -40,12 +40,12 @@ function LoginInner() {
 
   return (
     <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 lg:grid-cols-2 sm:px-6">
-      <div className="relative overflow-hidden rounded-[1.75rem] bg-[linear-gradient(160deg,#4a1830_0%,#9d174d_45%,#db2777_100%)] px-8 py-12 text-white">
+      <div className="relative overflow-hidden rounded-[1.75rem] bg-[var(--ink)] px-8 py-12 text-white">
         <div
           className="absolute inset-0 opacity-50"
           style={{
             backgroundImage:
-              "radial-gradient(ellipse at 80% 20%, rgba(251,207,232,0.45), transparent 50%)",
+              "radial-gradient(ellipse at 80% 20%, rgba(13,110,110,0.45), transparent 50%)",
           }}
         />
         <div className="relative">
@@ -107,7 +107,7 @@ function LoginInner() {
               autoComplete="current-password"
             />
           </div>
-          <Button type="submit" className="w-full bg-[var(--lagoon)] hover:bg-[#be185d]">
+          <Button type="submit" className="w-full bg-[var(--lagoon)] hover:bg-[#0a5a5a]">
             Giriş Yap
           </Button>
         </form>

@@ -28,7 +28,7 @@ export function ListingsEmpty({
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">{hint}</p>
       </div>
       {showCta && (
-        <Button asChild className="mt-2 bg-[var(--lagoon)] hover:bg-[#be185d]">
+        <Button asChild className="mt-2 bg-[var(--lagoon)] hover:bg-[#0a5a5a]">
           <Link href="/ilan/yeni">İlan Ver</Link>
         </Button>
       )}

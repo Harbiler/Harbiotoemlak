@@ -94,7 +94,7 @@ export default function PetHotelApplyPage() {
             bilgileriniz kaydedildi.
           </p>
           <div className="flex flex-wrap justify-center gap-3 pt-2">
-            <Button asChild className="bg-[var(--lagoon)] hover:bg-[#be185d]">
+            <Button asChild className="bg-[var(--lagoon)] hover:bg-[#0a5a5a]">
               <Link href="/kategori/evcil-hayvan-otelleri">Kategoriye dön</Link>
             </Button>
             <Button asChild variant="outline">
@@ -225,7 +225,7 @@ export default function PetHotelApplyPage() {
         <Button
           type="submit"
           disabled={saving}
-          className="h-11 w-full bg-[var(--lagoon)] hover:bg-[#be185d]"
+          className="h-11 w-full bg-[var(--lagoon)] hover:bg-[#0a5a5a]"
         >
           {saving ? "Gönderiliyor…" : "Başvuruyu gönder"}
         </Button>

@@ -53,43 +53,43 @@
 }
 
 :root {
-  /* Soft pink marketplace — blush surfaces, rose brand */
-  --background: #fdf4f7;
-  --foreground: #3a1526;
-  --ink: #4a1830;
-  --mist: #fce8f0;
-  --lagoon: #db2777;
-  --sand: #f9a8d4;
-  --card: #fff7fa;
-  --card-foreground: #3a1526;
-  --popover: #fffafc;
-  --popover-foreground: #3a1526;
-  --primary: #db2777;
-  --primary-foreground: #fff5f9;
-  --secondary: #fce7f0;
-  --secondary-foreground: #4a1830;
-  --muted: #f9e4ec;
-  --muted-foreground: #8a5a6e;
-  --accent: #fbcfe8;
-  --accent-foreground: #831843;
+  /* Cool Mediterranean marketplace */
+  --background: #f3f6f7;
+  --foreground: #14212b;
+  --ink: #0b2a33;
+  --mist: #e7eef1;
+  --lagoon: #0d6e6e;
+  --sand: #d4a574;
+  --card: #ffffff;
+  --card-foreground: #14212b;
+  --popover: #ffffff;
+  --popover-foreground: #14212b;
+  --primary: #0d6e6e;
+  --primary-foreground: #f2fbfa;
+  --secondary: #e4ecee;
+  --secondary-foreground: #14212b;
+  --muted: #e8eef0;
+  --muted-foreground: #5c6b73;
+  --accent: #d9ecea;
+  --accent-foreground: #0b3d3d;
   --destructive: oklch(0.55 0.2 25);
-  --border: color-mix(in oklab, #9d174d 12%, transparent);
-  --input: color-mix(in oklab, #9d174d 14%, transparent);
-  --ring: #db2777;
-  --chart-1: #db2777;
-  --chart-2: #ec4899;
-  --chart-3: #be185d;
-  --chart-4: #f472b6;
-  --chart-5: #9d174d;
+  --border: color-mix(in oklab, #0b2a33 10%, transparent);
+  --input: color-mix(in oklab, #0b2a33 12%, transparent);
+  --ring: #0d6e6e;
+  --chart-1: #0d6e6e;
+  --chart-2: #1a567a;
+  --chart-3: #b45309;
+  --chart-4: #166534;
+  --chart-5: #334155;
   --radius: 0.75rem;
-  --sidebar: #fdf4f7;
-  --sidebar-foreground: #3a1526;
-  --sidebar-primary: #db2777;
-  --sidebar-primary-foreground: #fff5f9;
-  --sidebar-accent: #fce7f0;
-  --sidebar-accent-foreground: #831843;
-  --sidebar-border: color-mix(in oklab, #9d174d 12%, transparent);
-  --sidebar-ring: #db2777;
+  --sidebar: #f3f6f7;
+  --sidebar-foreground: #14212b;
+  --sidebar-primary: #0d6e6e;
+  --sidebar-primary-foreground: #f2fbfa;
+  --sidebar-accent: #d9ecea;
+  --sidebar-accent-foreground: #0b3d3d;
+  --sidebar-border: color-mix(in oklab, #0b2a33 10%, transparent);
+  --sidebar-ring: #0d6e6e;
 }
 
 @layer base {
@@ -99,9 +99,9 @@
   body {
     @apply bg-background text-foreground;
     background-image:
-      radial-gradient(ellipse 80% 50% at 10% -10%, rgba(219, 39, 119, 0.12), transparent 50%),
-      radial-gradient(ellipse 60% 40% at 100% 0%, rgba(244, 114, 182, 0.14), transparent 45%),
-      linear-gradient(180deg, #fff8fb 0%, #fdf4f7 40%, #faeef3 100%);
+      radial-gradient(ellipse 80% 50% at 10% -10%, rgba(13, 110, 110, 0.08), transparent 50%),
+      radial-gradient(ellipse 60% 40% at 100% 0%, rgba(26, 86, 122, 0.07), transparent 45%),
+      linear-gradient(180deg, #f7fafb 0%, #f3f6f7 40%, #eef3f4 100%);
     background-attachment: fixed;
   }
   html {
@@ -141,7 +141,7 @@
 }
 
 .hb-surface {
-  @apply rounded-2xl border border-[color-mix(in_oklab,var(--lagoon)_18%,transparent)] bg-[color-mix(in_oklab,var(--card)_92%,#fce7f0)] backdrop-blur-sm;
+  @apply rounded-2xl border border-[color-mix(in_oklab,var(--ink)_8%,transparent)] bg-white/80 backdrop-blur-sm;
 }
 
 .hb-display {

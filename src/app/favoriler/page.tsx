@@ -42,7 +42,7 @@ export default function FavoritesPage() {
 
       {favListings.length === 0 && (
         <div className="mt-4">
-          <Button asChild className="bg-[var(--lagoon)] hover:bg-[#be185d]">
+          <Button asChild className="bg-[var(--lagoon)] hover:bg-[#0a5a5a]">
             <Link href="/ara">İlanlara göz at</Link>
           </Button>
         </div>

@@ -4,18 +4,18 @@ import type { CategorySlug } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const GRADIENTS: Record<string, string> = {
-  emlak: "from-pink-700 via-rose-600 to-fuchsia-700",
-  vasita: "from-rose-800 via-pink-700 to-fuchsia-700",
-  motorsiklet: "from-fuchsia-800 via-pink-700 to-rose-700",
-  "yedek-parca": "from-pink-900 via-rose-800 to-fuchsia-900",
-  "is-makineleri": "from-rose-700 via-pink-600 to-fuchsia-800",
-  ustalar: "from-pink-800 via-rose-700 to-red-800",
-  hayvanlar: "from-rose-800 via-pink-700 to-fuchsia-800",
-  "evcil-hayvan-otelleri": "from-pink-800 via-rose-700 to-fuchsia-800",
-  "yardimci-arayanlar": "from-rose-800 via-pink-700 to-stone-700",
-  "bakici-arayanlar": "from-fuchsia-800 via-pink-700 to-rose-800",
-  "ozel-ders": "from-pink-900 via-fuchsia-800 to-rose-900",
-  "is-ilanlari": "from-rose-900 via-pink-800 to-fuchsia-900",
+  emlak: "from-teal-700 via-teal-600 to-cyan-700",
+  vasita: "from-sky-800 via-blue-700 to-slate-700",
+  motorsiklet: "from-amber-700 via-orange-600 to-stone-700",
+  "yedek-parca": "from-slate-600 via-slate-500 to-zinc-700",
+  "is-makineleri": "from-yellow-800 via-amber-700 to-stone-800",
+  ustalar: "from-orange-800 via-red-700 to-stone-700",
+  hayvanlar: "from-green-800 via-emerald-700 to-teal-800",
+  "evcil-hayvan-otelleri": "from-cyan-800 via-teal-700 to-sky-800",
+  "yardimci-arayanlar": "from-stone-700 via-stone-600 to-neutral-800",
+  "bakici-arayanlar": "from-orange-700 via-amber-600 to-stone-800",
+  "ozel-ders": "from-blue-900 via-indigo-800 to-slate-800",
+  "is-ilanlari": "from-slate-800 via-slate-700 to-teal-900",
 };
 
 export function PhotoPlaceholder({
@@ -34,7 +34,7 @@ export function PhotoPlaceholder({
     <div
       className={cn(
         "relative flex items-center justify-center overflow-hidden bg-gradient-to-br text-white",
-        GRADIENTS[category] ?? "from-pink-800 to-rose-900",
+        GRADIENTS[category] ?? "from-teal-800 to-stone-700",
         className,
       )}
       role="img"

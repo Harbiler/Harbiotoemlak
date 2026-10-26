@@ -50,7 +50,7 @@ export default function EditListingPage({
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <h1 className="font-[family-name:var(--font-display)] text-3xl font-bold text-pink-950">
+      <h1 className="font-[family-name:var(--font-display)] text-3xl font-bold text-teal-950">
         İlanı düzenle
       </h1>
       <p className="mt-1 text-stone-600">{listing.title}</p>
