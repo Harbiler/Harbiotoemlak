@@ -98,6 +98,10 @@ export function supportsBrandModelSearch(category: CategorySlug | string): boole
   return brandCatalogFor(category) !== null;
 }
 
+export function sortedBrandNames(catalog: BrandCatalog): string[] {
+  return Object.keys(catalog).sort((a, b) => a.localeCompare(b, "tr"));
+}
+
 export function supportsDetailedSearch(category: CategorySlug | string): boolean {
   return DETAIL_SEARCH_CATEGORIES.includes(category as CategorySlug);
 }

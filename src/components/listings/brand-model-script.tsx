@@ -3,6 +3,7 @@ import {
   VASITA_BRANDS,
   YEDEK_PARCA_BRANDS,
 } from "@/lib/brand-models";
+import { allVasitaBrandCatalogs } from "@/lib/vasita-subcategories";
 
 /**
  * Progressive-enhancement cascade for Marka → Model.
@@ -10,6 +11,7 @@ import {
  */
 export function BrandModelScript() {
   const catalogs = {
+    ...allVasitaBrandCatalogs(),
     vasita: VASITA_BRANDS,
     motorsiklet: MOTORSIKLET_BRANDS,
     "yedek-parca": YEDEK_PARCA_BRANDS,

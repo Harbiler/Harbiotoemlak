@@ -21,6 +21,10 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { BrandModelFields } from "@/components/listings/brand-model-fields";
 import { supportsBrandModelSearch } from "@/lib/brand-models";
+import {
+  getVasitaSubcategory,
+  VASITA_SUBCATEGORIES,
+} from "@/lib/vasita-subcategories";
 
 interface FormState {
   category: CategorySlug;
@@ -154,6 +158,9 @@ export function ListingForm({
     if (!form.contactName.trim() || !form.contactPhone.trim()) {
       return "İletişim adı ve telefon zorunludur.";
     }
+    if (form.category === "vasita" && !form.fields.altKategori) {
+      return "Vasıta alt kategorisi seçin.";
+    }
     for (const field of categoryFields) {
       if (field.required && !form.fields[field.key]?.toString().trim()) {
         return `${field.label} alanı zorunludur.`;
@@ -181,6 +188,9 @@ export function ListingForm({
       const raw = form.fields[field.key];
       if (raw === undefined || raw === "") continue;
       parsedFields[field.key] = field.type === "number" ? Number(raw) : raw;
+    }
+    if (form.category === "vasita" && form.fields.altKategori) {
+      parsedFields.altKategori = form.fields.altKategori;
     }
 
     const sellerType: MembershipKind = user.membershipKind;
@@ -344,9 +354,47 @@ export function ListingForm({
           <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold text-[var(--ink)]">
             {category?.name} detayları
           </h2>
+          {form.category === "vasita" && (
+            <div>
+              <Label>Vasıta alt kategori *</Label>
+              <Select
+                value={form.fields.altKategori || undefined}
+                onValueChange={(v) => {
+                  setForm((f) => ({
+                    ...f,
+                    fields: {
+                      ...f.fields,
+                      altKategori: v ?? "",
+                      marka: "",
+                      model: "",
+                    },
+                  }));
+                }}
+                items={Object.fromEntries(
+                  VASITA_SUBCATEGORIES.map((s) => [s.slug, s.name]),
+                )}
+              >
+                <SelectTrigger className="mt-1.5 w-full bg-white">
+                  <SelectValue placeholder="Alt kategori seçin" />
+                </SelectTrigger>
+                <SelectContent className="z-[200] max-h-72">
+                  {VASITA_SUBCATEGORIES.map((s) => (
+                    <SelectItem key={s.slug} value={s.slug}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           {supportsBrandModelSearch(form.category) && (
             <BrandModelFields
               category={form.category}
+              catalog={
+                form.category === "vasita" && form.fields.altKategori
+                  ? getVasitaSubcategory(form.fields.altKategori)?.brands
+                  : undefined
+              }
               marka={form.fields.marka ?? ""}
               model={form.fields.model ?? ""}
               onMarkaChange={(v) => setField("marka", v)}

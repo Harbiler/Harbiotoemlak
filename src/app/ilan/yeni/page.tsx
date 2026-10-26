@@ -28,6 +28,10 @@ import {
 import { cn } from "@/lib/utils";
 import { BrandModelFields } from "@/components/listings/brand-model-fields";
 import { supportsBrandModelSearch } from "@/lib/brand-models";
+import {
+  getVasitaSubcategory,
+  VASITA_SUBCATEGORIES,
+} from "@/lib/vasita-subcategories";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 
 type Step = "kategori" | "form" | "onizleme" | "yayin";
@@ -57,6 +61,7 @@ function NewListingWizard() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preset = searchParams.get("kategori");
+  const presetAlt = searchParams.get("alt");
 
   const [step, setStep] = useState<Step>("kategori");
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +75,12 @@ function NewListingWizard() {
     district: "Kadıköy",
     contactName: "",
     contactPhone: "",
-    fields: {},
+    fields: ((): Record<string, string> => {
+      if (preset === "vasita" && presetAlt && getVasitaSubcategory(presetAlt)) {
+        return { altKategori: presetAlt };
+      }
+      return {};
+    })(),
   }));
 
   useEffect(() => {
@@ -117,6 +127,9 @@ function NewListingWizard() {
     if (!draft.contactName.trim() || !draft.contactPhone.trim()) {
       return "İletişim bilgileri zorunludur.";
     }
+    if (draft.category === "vasita" && !draft.fields.altKategori) {
+      return "Vasıta alt kategorisi seçin.";
+    }
     const fields = category?.fields ?? [];
     for (const f of fields) {
       if (f.required && !draft.fields[f.key]?.trim()) return `${f.label} zorunludur.`;
@@ -138,6 +151,9 @@ function NewListingWizard() {
       const raw = draft.fields[field.key];
       if (raw === undefined || raw === "") continue;
       parsedFields[field.key] = field.type === "number" ? Number(raw) : raw;
+    }
+    if (draft.category === "vasita" && draft.fields.altKategori) {
+      parsedFields.altKategori = draft.fields.altKategori;
     }
     const status: ListingStatus = user.role === "admin" ? "approved" : "pending";
     const created = createListing({
@@ -334,9 +350,47 @@ function NewListingWizard() {
           {(category.fields.length > 0) && (
             <div className="hb-surface space-y-4 p-5">
               <h2 className="font-semibold text-[var(--ink)]">{category.name} alanları</h2>
+              {category.slug === "vasita" && (
+                <div>
+                  <Label>Vasıta alt kategori *</Label>
+                  <Select
+                    value={draft.fields.altKategori || undefined}
+                    onValueChange={(v) =>
+                      setDraft({
+                        ...draft,
+                        fields: {
+                          ...draft.fields,
+                          altKategori: v ?? "",
+                          marka: "",
+                          model: "",
+                        },
+                      })
+                    }
+                    items={Object.fromEntries(
+                      VASITA_SUBCATEGORIES.map((s) => [s.slug, s.name]),
+                    )}
+                  >
+                    <SelectTrigger className="mt-1.5 w-full bg-white">
+                      <SelectValue placeholder="Alt kategori seçin" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[200] max-h-72">
+                      {VASITA_SUBCATEGORIES.map((s) => (
+                        <SelectItem key={s.slug} value={s.slug}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               {supportsBrandModelSearch(category.slug) && (
                 <BrandModelFields
                   category={category.slug}
+                  catalog={
+                    category.slug === "vasita" && draft.fields.altKategori
+                      ? getVasitaSubcategory(draft.fields.altKategori)?.brands
+                      : undefined
+                  }
                   marka={draft.fields.marka ?? ""}
                   model={draft.fields.model ?? ""}
                   onMarkaChange={(v) =>

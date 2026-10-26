@@ -1,6 +1,11 @@
 "use client";
 
-import { brandNames, modelsForBrand, supportsBrandModelSearch } from "@/lib/brand-models";
+import {
+  brandCatalogFor,
+  sortedBrandNames,
+  supportsBrandModelSearch,
+  type BrandCatalog,
+} from "@/lib/brand-models";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -12,6 +17,7 @@ import {
 
 export function BrandModelFields({
   category,
+  catalog,
   marka,
   model,
   onMarkaChange,
@@ -22,6 +28,7 @@ export function BrandModelFields({
   className,
 }: {
   category: string;
+  catalog?: BrandCatalog;
   marka: string;
   model: string;
   onMarkaChange: (value: string) => void;
@@ -31,9 +38,11 @@ export function BrandModelFields({
   required?: boolean;
   className?: string;
 }) {
-  if (!supportsBrandModelSearch(category)) return null;
-  const brands = brandNames(category);
-  const models = modelsForBrand(category, marka);
+  const resolved = catalog ?? brandCatalogFor(category);
+  if (!resolved && !supportsBrandModelSearch(category)) return null;
+  const brandsMap = resolved ?? {};
+  const brands = sortedBrandNames(brandsMap);
+  const models = marka ? brandsMap[marka] ?? [] : [];
   const brandItems = Object.fromEntries(brands.map((b) => [b, b]));
   const modelItems = Object.fromEntries(models.map((m) => [m, m]));
 

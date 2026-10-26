@@ -7,6 +7,10 @@ import {
 } from "@/lib/brand-models";
 import { HEPSI, isHepsi } from "@/lib/filter-all";
 import type { CategorySlug, Listing } from "@/lib/types";
+import {
+  getVasitaSubcategory,
+  vasitaCatalogKey,
+} from "@/lib/vasita-subcategories";
 import { BrandModelFilterFields } from "@/components/listings/brand-model-filter-fields";
 import { CityDistrictFields } from "@/components/listings/city-district-fields";
 import { Input } from "@/components/ui/input";
@@ -14,6 +18,18 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Button } from "@/components/ui/button";
 import { EmlakFilters } from "@/components/listings/emlak-filters";
+
+const VASITA_CAR_EXTRA_SUBS = new Set([
+  "otomobil",
+  "elektrikli-araclar",
+  "arazi-suv-pickup",
+  "minivan-panelvan",
+  "ticari-araclar",
+  "kiralik-araclar",
+  "hasarli-araclar",
+  "engelli-plakali",
+  "klasik-araclar",
+]);
 
 export interface FilterState {
   q: string;
@@ -86,28 +102,53 @@ export function ListingFilters({
   onChange,
   onReset,
   categorySlug,
+  vasitaSub,
 }: {
   value: FilterState;
   onChange: (next: FilterState) => void;
   onReset: () => void;
   categorySlug?: string;
+  /** When browsing /kategori/vasita/[sub], scopes Marka→Model to that alt kategori. */
+  vasitaSub?: string;
 }) {
   const sellerType = isHepsi(value.sellerType) ? HEPSI : value.sellerType;
   const category = categorySlug ? getCategory(categorySlug) : undefined;
-  const showDetailed = categorySlug ? supportsDetailedSearch(categorySlug) : false;
-  const showBrandModel = categorySlug ? supportsBrandModelSearch(categorySlug) : false;
+  const vasitaSubDef = vasitaSub ? getVasitaSubcategory(vasitaSub) : undefined;
+  const showDetailed = categorySlug
+    ? supportsDetailedSearch(categorySlug) || !!vasitaSubDef
+    : false;
+  const showBrandModel = categorySlug
+    ? supportsBrandModelSearch(categorySlug) || !!vasitaSubDef
+    : false;
   const isEmlak = categorySlug === "emlak";
+  const brandCatalog = vasitaSubDef?.brands;
+  const brandCatalogKey = vasitaSub
+    ? vasitaCatalogKey(vasitaSub)
+    : categorySlug;
+
+  const showCarExtras =
+    categorySlug === "vasita" &&
+    (!vasitaSub || VASITA_CAR_EXTRA_SUBS.has(vasitaSub));
+  const showYearRange =
+    categorySlug === "vasita" ||
+    categorySlug === "motorsiklet" ||
+    !!vasitaSubDef;
 
   const extraSelectFields =
     category && showDetailed && categorySlug === "yedek-parca"
       ? category.fields.filter(
           (f) => f.type === "select" && f.key !== "marka" && f.key !== "model",
         )
-      : category && showBrandModel
+      : category && showBrandModel && showCarExtras
         ? category.fields.filter(
             (f) => f.type === "select" && f.key !== "marka" && f.key !== "model",
           )
-        : [];
+        : category && showBrandModel && categorySlug === "motorsiklet"
+          ? category.fields.filter(
+              (f) =>
+                f.type === "select" && f.key !== "marka" && f.key !== "model",
+            )
+          : [];
 
   if (isEmlak) {
     return <EmlakFilters value={value} onChange={onChange} onReset={onReset} />;
@@ -122,7 +163,9 @@ export function ListingFilters({
           </p>
           <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
             {showBrandModel
-              ? "Tüm marka ve modellere göre daraltın."
+              ? vasitaSubDef
+                ? `${vasitaSubDef.name} için marka ve modellere göre daraltın.`
+                : "Tüm marka ve modellere göre daraltın."
               : "Özelliklere göre daraltın."}
           </p>
         </div>
@@ -143,6 +186,8 @@ export function ListingFilters({
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <BrandModelFilterFields
             category={categorySlug}
+            catalogKey={brandCatalogKey}
+            catalog={brandCatalog}
             marka={value.details.marka ?? HEPSI}
             model={value.details.model ?? HEPSI}
             markaLabel={
@@ -175,7 +220,7 @@ export function ListingFilters({
             />
           ))}
 
-          {(categorySlug === "vasita" || categorySlug === "motorsiklet") && (
+          {showYearRange && (
             <>
               <div>
                 <Label htmlFor="minYil" className="text-sm">

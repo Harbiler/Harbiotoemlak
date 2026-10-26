@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
-import { brandNames, modelsForBrand } from "@/lib/brand-models";
+import {
+  brandCatalogFor,
+  sortedBrandNames,
+  type BrandCatalog,
+} from "@/lib/brand-models";
 import { HEPSI, isHepsi } from "@/lib/filter-all";
 import { Label } from "@/components/ui/label";
 import { cn } from "cn";
@@ -13,6 +17,8 @@ const selectClassName = cn(
 
 export function BrandModelFilterFields({
   category,
+  catalogKey,
+  catalog,
   marka,
   model,
   onMarkaChange,
@@ -21,6 +27,10 @@ export function BrandModelFilterFields({
   modelLabel = "Model",
 }: {
   category: string;
+  /** Progressive-enhancement key (e.g. vasita:otomobil). Defaults to category. */
+  catalogKey?: string;
+  /** Override brand→model map for this filter. */
+  catalog?: BrandCatalog;
   marka: string;
   model: string;
   onMarkaChange: (marka: string) => void;
@@ -39,13 +49,13 @@ export function BrandModelFilterFields({
   markaCb.current = onMarkaChange;
   modelCb.current = onModelChange;
 
-  const brands = brandNames(category);
+  const resolvedCatalog = catalog ?? brandCatalogFor(category) ?? {};
+  const brands = sortedBrandNames(resolvedCatalog);
+  const scriptKey = catalogKey ?? category;
   const normalizedMarka = isHepsi(marka) ? HEPSI : marka;
   const normalizedModel = isHepsi(model) ? HEPSI : model;
   const initialModels =
-    normalizedMarka !== HEPSI
-      ? modelsForBrand(category, normalizedMarka)
-      : [];
+    normalizedMarka !== HEPSI ? resolvedCatalog[normalizedMarka] ?? [] : [];
 
   useEffect(() => {
     const brandSelect = brandRef.current;
@@ -100,7 +110,7 @@ export function BrandModelFilterFields({
           data-slot="native-select"
           data-hb-role="brand"
           data-hb-model-id={modelId}
-          data-hb-category={category}
+          data-hb-category={scriptKey}
           className={selectClassName}
           defaultValue={normalizedMarka}
         >
