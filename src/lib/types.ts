@@ -58,6 +58,26 @@ export interface AuthSession {
   userId: string;
 }
 
+export type PetHotelApplicationStatus = "pending" | "reviewed" | "rejected";
+
+export interface PetHotelApplicationFile {
+  name: string;
+  type: string;
+  size: number;
+  dataUrl: string;
+}
+
+export interface PetHotelApplication {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  idDocument: PetHotelApplicationFile;
+  residenceDocument: PetHotelApplicationFile;
+  status: PetHotelApplicationStatus;
+  createdAt: string;
+}
+
 export function getSellerBadge(listing: Pick<Listing, "sellerType" | "sellerKurumsalType">): SellerBadge {
   if (listing.sellerType === "kurumsal" && listing.sellerKurumsalType === "galeri") return "galeri";
   if (listing.sellerType === "kurumsal" && listing.sellerKurumsalType === "emlak") return "emlak";

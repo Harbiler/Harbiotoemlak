@@ -18,7 +18,7 @@ import {
   ListingsLoading,
 } from "@/components/listings/listing-states";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Hotel, Plus } from "lucide-react";
 
 export default function CategoryPage({
   params,
@@ -74,12 +74,26 @@ export default function CategoryPage({
               <p className="mt-1 max-w-xl text-[var(--muted-foreground)]">{category.description}</p>
             </div>
           </div>
-          <Button asChild className="bg-[var(--lagoon)] hover:bg-[#be185d]">
-            <Link href={`/ilan/yeni?kategori=${category.slug}`}>
-              <Plus className="size-4" />
-              Bu kategoride ilan ver
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {category.slug === "evcil-hayvan-otelleri" && (
+              <Button
+                asChild
+                variant="outline"
+                className="border-[color-mix(in_oklab,var(--lagoon)_35%,transparent)] bg-white/80 text-[var(--lagoon)] hover:bg-[var(--mist)] hover:text-[var(--lagoon)]"
+              >
+                <Link href="/evcil-hayvan-hoteli-ol">
+                  <Hotel className="size-4" />
+                  Evcil Hayvan Hoteli Ol
+                </Link>
+              </Button>
+            )}
+            <Button asChild className="bg-[var(--lagoon)] hover:bg-[#be185d]">
+              <Link href={`/ilan/yeni?kategori=${category.slug}`}>
+                <Plus className="size-4" />
+                Bu kategoride ilan ver
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
 

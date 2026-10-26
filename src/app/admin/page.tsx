@@ -7,7 +7,16 @@ import { useAuth } from "@/context/auth-context";
 import { useListings } from "@/context/listings-context";
 import { getCategory, CATEGORIES } from "@/lib/categories";
 import { formatPrice } from "@/lib/format";
-import type { Listing, ListingStatus, User } from "@/lib/types";
+import {
+  loadPetHotelApplications,
+  updatePetHotelApplicationStatus,
+} from "@/lib/storage";
+import type {
+  Listing,
+  ListingStatus,
+  PetHotelApplication,
+  User,
+} from "@/lib/types";
 import { ListingsLoading } from "@/components/listings/listing-states";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,11 +68,22 @@ export default function AdminPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [deleteTarget, setDeleteTarget] = useState<Listing | null>(null);
   const [userDelete, setUserDelete] = useState<User | null>(null);
+  const [petApps, setPetApps] = useState<PetHotelApplication[]>([]);
 
   useEffect(() => {
     if (ready && !user) router.replace("/giris?admin=1&next=/admin");
     else if (ready && user && user.role !== "admin") router.replace("/");
   }, [ready, user, router]);
+
+  useEffect(() => {
+    if (ready && user?.role === "admin") {
+      setPetApps(loadPetHotelApplications());
+    }
+  }, [ready, user]);
+
+  function refreshPetApps() {
+    setPetApps(loadPetHotelApplications());
+  }
 
   const filtered = useMemo(() => {
     return listings.filter((l) => {
@@ -148,6 +168,14 @@ export default function AdminPage() {
         <TabsList>
           <TabsTrigger value="listings">İlanlar</TabsTrigger>
           <TabsTrigger value="users">Üyeler</TabsTrigger>
+          <TabsTrigger value="pet-hotels">
+            Pet otel başvuruları
+            {petApps.filter((a) => a.status === "pending").length > 0 && (
+              <Badge className="ml-1 bg-[var(--lagoon)]">
+                {petApps.filter((a) => a.status === "pending").length}
+              </Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="listings" className="mt-4 space-y-4">
@@ -347,6 +375,100 @@ export default function AdminPage() {
                     </TableCell>
                   </TableRow>
                 ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="pet-hotels" className="mt-4">
+          <div className="overflow-x-auto hb-surface">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Başvuran</TableHead>
+                  <TableHead>İletişim</TableHead>
+                  <TableHead>Belgeler</TableHead>
+                  <TableHead>Durum</TableHead>
+                  <TableHead className="text-right">İşlem</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {petApps.map((app) => (
+                  <TableRow key={app.id}>
+                    <TableCell>
+                      <p className="font-medium">{app.fullName}</p>
+                      <p className="text-xs text-stone-500">
+                        {new Date(app.createdAt).toLocaleString("tr-TR")}
+                      </p>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      <p>{app.email}</p>
+                      <p className="text-xs text-stone-500">{app.phone}</p>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      <div className="flex flex-col gap-1">
+                        <a
+                          href={app.idDocument.dataUrl}
+                          download={app.idDocument.name}
+                          className="text-[var(--lagoon)] hover:underline"
+                        >
+                          Kimlik: {app.idDocument.name}
+                        </a>
+                        <a
+                          href={app.residenceDocument.dataUrl}
+                          download={app.residenceDocument.name}
+                          className="text-[var(--lagoon)] hover:underline"
+                        >
+                          İkametgâh: {app.residenceDocument.name}
+                        </a>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">
+                        {app.status === "pending"
+                          ? "Bekliyor"
+                          : app.status === "reviewed"
+                            ? "İncelendi"
+                            : "Reddedildi"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        {app.status !== "reviewed" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              updatePetHotelApplicationStatus(app.id, "reviewed");
+                              refreshPetApps();
+                            }}
+                          >
+                            Onayla
+                          </Button>
+                        )}
+                        {app.status !== "rejected" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              updatePetHotelApplicationStatus(app.id, "rejected");
+                              refreshPetApps();
+                            }}
+                          >
+                            Reddet
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {petApps.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="py-8 text-center text-sm text-stone-500">
+                      Henüz pet otel başvurusu yok.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
