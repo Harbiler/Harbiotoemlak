@@ -34,6 +34,8 @@ export function BrandModelFields({
   if (!supportsBrandModelSearch(category)) return null;
   const brands = brandNames(category);
   const models = modelsForBrand(category, marka);
+  const brandItems = Object.fromEntries(brands.map((b) => [b, b]));
+  const modelItems = Object.fromEntries(models.map((m) => [m, m]));
 
   return (
     <div className={className ?? "grid gap-4 sm:grid-cols-2"}>
@@ -48,11 +50,12 @@ export function BrandModelFields({
             onMarkaChange(v ?? "");
             onModelChange("");
           }}
+          items={brandItems}
         >
           <SelectTrigger className="w-full bg-white">
             <SelectValue placeholder="Marka seçin" />
           </SelectTrigger>
-          <SelectContent className="max-h-72">
+          <SelectContent className="z-[200] max-h-72">
             {brands.map((b) => (
               <SelectItem key={b} value={b}>
                 {b}
@@ -70,11 +73,12 @@ export function BrandModelFields({
           value={model || undefined}
           onValueChange={(v) => onModelChange(v ?? "")}
           disabled={!marka}
+          items={modelItems}
         >
           <SelectTrigger className="w-full bg-white">
             <SelectValue placeholder={marka ? "Model seçin" : "Önce marka seçin"} />
           </SelectTrigger>
-          <SelectContent className="max-h-72">
+          <SelectContent className="z-[200] max-h-72">
             {models.map((m) => (
               <SelectItem key={m} value={m}>
                 {m}

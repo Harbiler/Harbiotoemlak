@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { CITY_NAMES, CITIES } from "@/lib/cities";
+import { HEPSI, isHepsi } from "@/lib/filter-all";
 import type { FilterState } from "@/components/listings/listing-filters";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,10 +18,12 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 
 function setDetail(value: FilterState, key: string, next: string): FilterState {
   const details = { ...value.details };
-  if (!next || next === "all") delete details[key];
+  if (isHepsi(next)) delete details[key];
   else details[key] = next;
   return { ...value, details };
 }
+
+type Opt = { value: string; label: string };
 
 function FieldSelect({
   label,
@@ -32,21 +35,26 @@ function FieldSelect({
   label: string;
   value: string;
   onChange: (v: string) => void;
-  options: { value: string; label: string }[] | string[];
+  options: Opt[] | string[];
   allLabel?: string;
 }) {
-  const normalized = options.map((o) =>
+  const normalized: Opt[] = options.map((o) =>
     typeof o === "string" ? { value: o, label: o } : o,
   );
+  const items: Record<string, string> = { [HEPSI]: allLabel };
+  for (const o of normalized) items[o.value] = o.label;
+
+  const current = isHepsi(value) ? HEPSI : value;
+
   return (
     <div>
       <Label className="text-sm">{label}</Label>
-      <Select value={value || "all"} onValueChange={(v) => onChange(v ?? "all")}>
+      <Select value={current} onValueChange={(v) => onChange(v ?? HEPSI)} items={items}>
         <SelectTrigger className="mt-1.5 w-full bg-white">
           <SelectValue placeholder={allLabel} />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">{allLabel}</SelectItem>
+        <SelectContent className="z-[200]">
+          <SelectItem value={HEPSI}>{allLabel}</SelectItem>
           {normalized.map((o) => (
             <SelectItem key={o.value} value={o.value}>
               {o.label}
@@ -68,8 +76,30 @@ export function EmlakFilters({
   onReset: () => void;
 }) {
   const [gelismis, setGelismis] = useState(false);
-  const districts = value.city !== "all" ? CITIES[value.city] ?? [] : [];
+  const city = isHepsi(value.city) ? HEPSI : value.city;
+  const district = isHepsi(value.district) ? HEPSI : value.district;
+  const districts = city !== HEPSI ? CITIES[city] ?? [] : [];
   const d = value.details;
+
+  const cityItems = useMemo(() => {
+    const map: Record<string, string> = { [HEPSI]: "Tüm iller" };
+    for (const c of CITY_NAMES) map[c] = c;
+    return map;
+  }, []);
+
+  const districtItems = useMemo(() => {
+    const map: Record<string, string> = {
+      [HEPSI]: city === HEPSI ? "Önce il seçin" : "Tüm ilçeler",
+    };
+    for (const x of districts) map[x] = x;
+    return map;
+  }, [city, districts]);
+
+  const sortItems = {
+    newest: "En yeni ilanlar",
+    "price-asc": "Fiyat: düşükten yükseğe",
+    "price-desc": "Fiyat: yüksekten düşüğe",
+  };
 
   return (
     <div className="hb-surface space-y-4 p-4">
@@ -82,14 +112,14 @@ export function EmlakFilters({
 
       <FieldSelect
         label="Satılık / Kiralık"
-        value={d.ilanTipi ?? "all"}
+        value={d.ilanTipi ?? HEPSI}
         onChange={(v) => onChange(setDetail(value, "ilanTipi", v))}
         options={["Satılık", "Kiralık", "Devren"]}
       />
 
       <FieldSelect
         label="Konut tipi"
-        value={d.emlakTipi ?? "all"}
+        value={d.emlakTipi ?? HEPSI}
         onChange={(v) => onChange(setDetail(value, "emlakTipi", v))}
         options={["Daire", "Villa", "Müstakil Ev", "Rezidans", "Yazlık", "İşyeri", "Arsa", "Köşk"]}
       />
@@ -97,16 +127,17 @@ export function EmlakFilters({
       <div>
         <Label className="text-sm">İl</Label>
         <Select
-          value={value.city}
-          onValueChange={(city) =>
-            onChange({ ...value, city: city ?? "all", district: "all" })
+          value={city}
+          onValueChange={(next) =>
+            onChange({ ...value, city: next ?? HEPSI, district: HEPSI })
           }
+          items={cityItems}
         >
           <SelectTrigger className="mt-1.5 w-full bg-white">
             <SelectValue placeholder="Tüm iller" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tüm iller</SelectItem>
+          <SelectContent className="z-[200]">
+            <SelectItem value={HEPSI}>Tüm iller</SelectItem>
             {CITY_NAMES.map((c) => (
               <SelectItem key={c} value={c}>
                 {c}
@@ -119,15 +150,16 @@ export function EmlakFilters({
       <div>
         <Label className="text-sm">İlçe</Label>
         <Select
-          value={value.district}
-          onValueChange={(district) => onChange({ ...value, district: district ?? "all" })}
-          disabled={value.city === "all"}
+          value={district}
+          onValueChange={(next) => onChange({ ...value, district: next ?? HEPSI })}
+          disabled={city === HEPSI}
+          items={districtItems}
         >
           <SelectTrigger className="mt-1.5 w-full bg-white">
-            <SelectValue placeholder={value.city === "all" ? "Önce il seçin" : "Tüm ilçeler"} />
+            <SelectValue placeholder={city === HEPSI ? "Önce il seçin" : "Tüm ilçeler"} />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tüm ilçeler</SelectItem>
+          <SelectContent className="z-[200]">
+            <SelectItem value={HEPSI}>Tüm ilçeler</SelectItem>
             {districts.map((x) => (
               <SelectItem key={x} value={x}>
                 {x}
@@ -139,7 +171,7 @@ export function EmlakFilters({
 
       <FieldSelect
         label="Oda sayısı"
-        value={d.odaSayisi ?? "all"}
+        value={d.odaSayisi ?? HEPSI}
         onChange={(v) => onChange(setDetail(value, "odaSayisi", v))}
         options={["1+0", "1+1", "2+1", "3+1", "4+1", "5+1", "6+"]}
       />
@@ -208,7 +240,7 @@ export function EmlakFilters({
 
       <FieldSelect
         label="Bina yaşı"
-        value={d.binaYasi ?? "all"}
+        value={d.binaYasi ?? HEPSI}
         onChange={(v) => onChange(setDetail(value, "binaYasi", v))}
         options={["0 (Sıfır)", "1-5", "6-10", "11-15", "16-20", "21-25", "26-30", "31+"]}
       />
@@ -216,13 +248,14 @@ export function EmlakFilters({
       <div>
         <Label className="text-sm">Sıralama</Label>
         <Select
-          value={value.sort}
+          value={value.sort || "newest"}
           onValueChange={(sort) => onChange({ ...value, sort: sort ?? "newest" })}
+          items={sortItems}
         >
           <SelectTrigger className="mt-1.5 w-full bg-white">
-            <SelectValue />
+            <SelectValue placeholder="En yeni ilanlar" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="z-[200]">
             <SelectItem value="newest">En yeni ilanlar</SelectItem>
             <SelectItem value="price-asc">Fiyat: düşükten yükseğe</SelectItem>
             <SelectItem value="price-desc">Fiyat: yüksekten düşüğe</SelectItem>
@@ -244,7 +277,7 @@ export function EmlakFilters({
         <div className="space-y-4 border-t border-[color-mix(in_oklab,var(--ink)_8%,transparent)] pt-4">
           <FieldSelect
             label="Bulunduğu kat"
-            value={d.bulunduguKat ?? "all"}
+            value={d.bulunduguKat ?? HEPSI}
             onChange={(v) => onChange(setDetail(value, "bulunduguKat", v))}
             options={[
               "Bodrum",
@@ -269,19 +302,19 @@ export function EmlakFilters({
           />
           <FieldSelect
             label="Binadaki kat sayısı"
-            value={d.katSayisi ?? "all"}
+            value={d.katSayisi ?? HEPSI}
             onChange={(v) => onChange(setDetail(value, "katSayisi", v))}
             options={["1", "2", "3", "4", "5", "6-10", "11-15", "16-20", "21+"]}
           />
           <FieldSelect
             label="Banyo sayısı"
-            value={d.banyoSayisi ?? "all"}
+            value={d.banyoSayisi ?? HEPSI}
             onChange={(v) => onChange(setDetail(value, "banyoSayisi", v))}
             options={["1", "2", "3", "4+"]}
           />
           <FieldSelect
             label="Isınma"
-            value={d.isinma ?? "all"}
+            value={d.isinma ?? HEPSI}
             onChange={(v) => onChange(setDetail(value, "isinma", v))}
             options={[
               "Doğalgaz (Kombi)",
@@ -295,7 +328,7 @@ export function EmlakFilters({
           />
           <FieldSelect
             label="Cephe"
-            value={d.cephe ?? "all"}
+            value={d.cephe ?? HEPSI}
             onChange={(v) => onChange(setDetail(value, "cephe", v))}
             options={[
               "Kuzey",
@@ -310,49 +343,49 @@ export function EmlakFilters({
           />
           <FieldSelect
             label="Mutfak"
-            value={d.mutfak ?? "all"}
+            value={d.mutfak ?? HEPSI}
             onChange={(v) => onChange(setDetail(value, "mutfak", v))}
             options={["Açık (Amerikan)", "Kapalı", "Ankastre", "Laminat"]}
           />
           <FieldSelect
             label="Balkon"
-            value={d.balkon ?? "all"}
+            value={d.balkon ?? HEPSI}
             onChange={(v) => onChange(setDetail(value, "balkon", v))}
             options={["Var", "Yok", "Teras", "Fransız"]}
           />
           <FieldSelect
             label="Asansör"
-            value={d.asansor ?? "all"}
+            value={d.asansor ?? HEPSI}
             onChange={(v) => onChange(setDetail(value, "asansor", v))}
             options={["Var", "Yok"]}
           />
           <FieldSelect
             label="Otopark"
-            value={d.otopark ?? "all"}
+            value={d.otopark ?? HEPSI}
             onChange={(v) => onChange(setDetail(value, "otopark", v))}
             options={["Yok", "Açık", "Kapalı", "Açık & Kapalı"]}
           />
           <FieldSelect
             label="Eşya durumu"
-            value={d.esyali ?? "all"}
+            value={d.esyali ?? HEPSI}
             onChange={(v) => onChange(setDetail(value, "esyali", v))}
             options={["Eşyalı", "Eşyasız", "Sadece Beyaz Eşya"]}
           />
           <FieldSelect
             label="Kullanım durumu"
-            value={d.kullanimDurumu ?? "all"}
+            value={d.kullanimDurumu ?? HEPSI}
             onChange={(v) => onChange(setDetail(value, "kullanimDurumu", v))}
             options={["Boş", "Kiracılı", "Mülk Sahibi"]}
           />
           <FieldSelect
             label="Site içinde mi?"
-            value={d.siteIcinde ?? "all"}
+            value={d.siteIcinde ?? HEPSI}
             onChange={(v) => onChange(setDetail(value, "siteIcinde", v))}
             options={["Evet", "Hayır"]}
           />
           <FieldSelect
             label="Tapu durumu"
-            value={d.tapuDurumu ?? "all"}
+            value={d.tapuDurumu ?? HEPSI}
             onChange={(v) => onChange(setDetail(value, "tapuDurumu", v))}
             options={[
               "Kat Mülkiyeti",
@@ -364,20 +397,20 @@ export function EmlakFilters({
           />
           <FieldSelect
             label="Krediye uygun mu?"
-            value={d.krediyeUygun ?? "all"}
+            value={d.krediyeUygun ?? HEPSI}
             onChange={(v) => onChange(setDetail(value, "krediyeUygun", v))}
             options={["Evet", "Hayır"]}
           />
           <FieldSelect
             label="Takas"
-            value={d.takas ?? "all"}
+            value={d.takas ?? HEPSI}
             onChange={(v) => onChange(setDetail(value, "takas", v))}
             options={["Evet", "Hayır"]}
           />
           <FieldSelect
             label="Satıcı tipi"
             value={value.sellerType}
-            onChange={(v) => onChange({ ...value, sellerType: v })}
+            onChange={(v) => onChange({ ...value, sellerType: isHepsi(v) ? HEPSI : v })}
             options={[
               { value: "bireysel", label: "Bireysel (şahıs)" },
               { value: "kurumsal", label: "Kurumsal (emlak ofisi)" },

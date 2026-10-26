@@ -25,6 +25,14 @@ export function PetHotelLocationBar({
   const [city, setCity] = useState("İstanbul");
   const districts = useMemo(() => CITIES[city] ?? [], [city]);
   const [district, setDistrict] = useState(districts[0] ?? "");
+  const cityItems = useMemo(
+    () => Object.fromEntries(CITY_NAMES.map((c) => [c, c])),
+    [],
+  );
+  const districtItems = useMemo(
+    () => Object.fromEntries(districts.map((d) => [d, d])),
+    [districts],
+  );
 
   return (
     <div className="hb-surface space-y-4 p-4">
@@ -79,11 +87,12 @@ export function PetHotelLocationBar({
               setCity(next);
               setDistrict(CITIES[next]?.[0] ?? "");
             }}
+            items={cityItems}
           >
             <SelectTrigger className="w-full bg-white">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[200]">
               {CITY_NAMES.map((c) => (
                 <SelectItem key={c} value={c}>
                   {c}
@@ -94,11 +103,15 @@ export function PetHotelLocationBar({
         </div>
         <div className="space-y-1.5">
           <Label>İlçe</Label>
-          <Select value={district} onValueChange={(v) => setDistrict(v ?? "")}>
+          <Select
+            value={district}
+            onValueChange={(v) => setDistrict(v ?? "")}
+            items={districtItems}
+          >
             <SelectTrigger className="w-full bg-white">
               <SelectValue placeholder="İlçe" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[200]">
               {districts.map((d) => (
                 <SelectItem key={d} value={d}>
                   {d}

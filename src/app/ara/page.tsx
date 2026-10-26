@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { HEPSI, isHepsi } from "@/lib/filter-all";
 
 function SearchInner() {
   const searchParams = useSearchParams();
@@ -36,8 +37,17 @@ function SearchInner() {
     details: {},
     q: searchParams.get("q") ?? "",
   }));
-  const [category, setCategory] = useState(searchParams.get("kategori") ?? "all");
-  const isPetHotels = category === "evcil-hayvan-otelleri";
+  const [category, setCategory] = useState(
+    searchParams.get("kategori") ?? HEPSI,
+  );
+  const categoryValue = isHepsi(category) ? HEPSI : category;
+  const isPetHotels = categoryValue === "evcil-hayvan-otelleri";
+
+  const categoryItems = useMemo(() => {
+    const map: Record<string, string> = { [HEPSI]: "Tüm kategoriler" };
+    for (const c of CATEGORIES) map[c.slug] = c.name;
+    return map;
+  }, []);
 
   useEffect(() => {
     const q = searchParams.get("q");
@@ -47,7 +57,7 @@ function SearchInner() {
   }, [searchParams]);
 
   function onCategoryChange(next: string) {
-    setCategory(next ?? "all");
+    setCategory(next ?? HEPSI);
     setFilters((f) => ({ ...f, details: {} }));
   }
 
@@ -57,8 +67,9 @@ function SearchInner() {
   );
 
   const filtered = useMemo(() => {
-    const base =
-      category === "all" ? approved : approved.filter((l) => l.category === category);
+    const base = isHepsi(categoryValue)
+      ? approved
+      : approved.filter((l) => l.category === categoryValue);
 
     if (isPetHotels) {
       if (!location.coords) return [];
@@ -85,12 +96,16 @@ function SearchInner() {
         <aside className="space-y-4">
           <div className="hb-surface space-y-2 p-4">
             <Label>Kategori</Label>
-            <Select value={category} onValueChange={(v) => onCategoryChange(v ?? "all")}>
+            <Select
+              value={categoryValue}
+              onValueChange={(v) => onCategoryChange(v ?? HEPSI)}
+              items={categoryItems}
+            >
               <SelectTrigger className="w-full bg-white">
                 <SelectValue placeholder="Tüm kategoriler" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tüm kategoriler</SelectItem>
+              <SelectContent className="z-[200]">
+                <SelectItem value={HEPSI}>Tüm kategoriler</SelectItem>
                 {CATEGORIES.map((c) => (
                   <SelectItem key={c.slug} value={c.slug}>
                     {c.name}
@@ -117,7 +132,7 @@ function SearchInner() {
             value={filters}
             onChange={setFilters}
             onReset={() => setFilters({ ...DEFAULT_FILTERS, details: {}, q: filters.q })}
-            categorySlug={category === "all" ? undefined : category}
+            categorySlug={isHepsi(categoryValue) ? undefined : categoryValue}
           />
         </aside>
 

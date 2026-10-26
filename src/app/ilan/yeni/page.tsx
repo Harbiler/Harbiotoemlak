@@ -293,11 +293,12 @@ function NewListingWizard() {
                     const c = city ?? draft.city;
                     setDraft({ ...draft, city: c, district: CITIES[c]?.[0] ?? "" });
                   }}
+                  items={Object.fromEntries(CITY_NAMES.map((c) => [c, c]))}
                 >
                   <SelectTrigger className="mt-1.5 w-full">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[200]">
                     {CITY_NAMES.map((c) => (
                       <SelectItem key={c} value={c}>
                         {c}
@@ -313,11 +314,12 @@ function NewListingWizard() {
                   onValueChange={(district) =>
                     setDraft({ ...draft, district: district ?? draft.district })
                   }
+                  items={Object.fromEntries(districts.map((d) => [d, d]))}
                 >
                   <SelectTrigger className="mt-1.5 w-full">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[200]">
                     {districts.map((d) => (
                       <SelectItem key={d} value={d}>
                         {d}
@@ -376,11 +378,14 @@ function NewListingWizard() {
                               fields: { ...draft.fields, [field.key]: v ?? "" },
                             })
                           }
+                          items={Object.fromEntries(
+                            field.options.map((o) => [o, o]),
+                          )}
                         >
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Seçin" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="z-[200]">
                             {field.options.map((o) => (
                               <SelectItem key={o} value={o}>
                                 {o}

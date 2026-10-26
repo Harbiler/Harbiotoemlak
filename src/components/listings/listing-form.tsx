@@ -78,12 +78,17 @@ function FieldInput({
   onChange: (v: string) => void;
 }) {
   if (field.type === "select" && field.options) {
+    const items = Object.fromEntries(field.options.map((o) => [o, o]));
     return (
-      <Select value={value || undefined} onValueChange={(v) => onChange(v ?? "")}>
+      <Select
+        value={value || undefined}
+        onValueChange={(v) => onChange(v ?? "")}
+        items={items}
+      >
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Seçin" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="z-[200]">
           {field.options.map((o) => (
             <SelectItem key={o} value={o}>
               {o}
@@ -240,11 +245,12 @@ export function ListingForm({
               }))
             }
             disabled={!!listing && !adminMode}
+            items={Object.fromEntries(CATEGORIES.map((c) => [c.slug, c.name]))}
           >
             <SelectTrigger className="mt-1.5 w-full">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[200]">
               {CATEGORIES.map((c) => (
                 <SelectItem key={c.slug} value={c.slug}>
                   {c.name}
@@ -295,11 +301,12 @@ export function ListingForm({
                 const first = CITIES[c]?.[0] ?? "";
                 setForm({ ...form, city: c, district: first });
               }}
+              items={Object.fromEntries(CITY_NAMES.map((c) => [c, c]))}
             >
               <SelectTrigger className="mt-1.5 w-full">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200]">
                 {CITY_NAMES.map((c) => (
                   <SelectItem key={c} value={c}>
                     {c}
@@ -315,11 +322,12 @@ export function ListingForm({
               onValueChange={(district) =>
                 setForm({ ...form, district: district ?? form.district })
               }
+              items={Object.fromEntries(districts.map((d) => [d, d]))}
             >
               <SelectTrigger className="mt-1.5 w-full">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200]">
                 {districts.map((d) => (
                   <SelectItem key={d} value={d}>
                     {d}
@@ -413,11 +421,16 @@ export function ListingForm({
               onValueChange={(status) =>
                 setForm({ ...form, status: (status as ListingStatus) ?? form.status })
               }
+              items={{
+                pending: "Onay bekliyor",
+                approved: "Yayında",
+                hidden: "Gizli",
+              }}
             >
               <SelectTrigger className="mt-1.5 w-full">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[200]">
                 <SelectItem value="pending">Onay bekliyor</SelectItem>
                 <SelectItem value="approved">Yayında</SelectItem>
                 <SelectItem value="hidden">Gizli</SelectItem>

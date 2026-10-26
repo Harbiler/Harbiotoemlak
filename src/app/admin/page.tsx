@@ -37,6 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { HEPSI, isHepsi } from "@/lib/filter-all";
 import {
   Dialog,
   DialogContent,
@@ -64,11 +65,24 @@ export default function AdminPage() {
   } = useListings();
   const router = useRouter();
   const [q, setQ] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>(HEPSI);
+  const [categoryFilter, setCategoryFilter] = useState<string>(HEPSI);
   const [deleteTarget, setDeleteTarget] = useState<Listing | null>(null);
   const [userDelete, setUserDelete] = useState<User | null>(null);
   const [petApps, setPetApps] = useState<PetHotelApplication[]>([]);
+
+  const statusItems = {
+    [HEPSI]: "Tüm durumlar",
+    pending: "Onay bekliyor",
+    approved: "Yayında",
+    hidden: "Gizli",
+  };
+
+  const categoryItems = useMemo(() => {
+    const map: Record<string, string> = { [HEPSI]: "Tüm kategoriler" };
+    for (const c of CATEGORIES) map[c.slug] = c.name;
+    return map;
+  }, []);
 
   useEffect(() => {
     if (ready && !user) router.replace("/giris?admin=1&next=/admin");
@@ -87,8 +101,8 @@ export default function AdminPage() {
 
   const filtered = useMemo(() => {
     return listings.filter((l) => {
-      if (statusFilter !== "all" && l.status !== statusFilter) return false;
-      if (categoryFilter !== "all" && l.category !== categoryFilter) return false;
+      if (!isHepsi(statusFilter) && l.status !== statusFilter) return false;
+      if (!isHepsi(categoryFilter) && l.category !== categoryFilter) return false;
       if (q) {
         const needle = q.toLowerCase();
         if (
@@ -186,26 +200,31 @@ export default function AdminPage() {
               onChange={(e) => setQ(e.target.value)}
               className="max-w-xs"
             />
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "all")}>
+            <Select
+              value={isHepsi(statusFilter) ? HEPSI : statusFilter}
+              onValueChange={(v) => setStatusFilter(v ?? HEPSI)}
+              items={statusItems}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Durum" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tüm durumlar</SelectItem>
+              <SelectContent className="z-[200]">
+                <SelectItem value={HEPSI}>Tüm durumlar</SelectItem>
                 <SelectItem value="pending">Onay bekliyor</SelectItem>
                 <SelectItem value="approved">Yayında</SelectItem>
                 <SelectItem value="hidden">Gizli</SelectItem>
               </SelectContent>
             </Select>
             <Select
-              value={categoryFilter}
-              onValueChange={(v) => setCategoryFilter(v ?? "all")}
+              value={isHepsi(categoryFilter) ? HEPSI : categoryFilter}
+              onValueChange={(v) => setCategoryFilter(v ?? HEPSI)}
+              items={categoryItems}
             >
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Kategori" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tüm kategoriler</SelectItem>
+              <SelectContent className="z-[200]">
+                <SelectItem value={HEPSI}>Tüm kategoriler</SelectItem>
                 {CATEGORIES.map((c) => (
                   <SelectItem key={c.slug} value={c.slug}>
                     {c.name}
@@ -353,11 +372,12 @@ export default function AdminPage() {
                           updateUser(u.id, { role: (role as "user" | "admin") ?? u.role })
                         }
                         disabled={u.id === user.id}
+                        items={{ user: "Kullanıcı", admin: "Admin" }}
                       >
                         <SelectTrigger className="w-[120px]">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="z-[200]">
                           <SelectItem value="user">Kullanıcı</SelectItem>
                           <SelectItem value="admin">Admin</SelectItem>
                         </SelectContent>

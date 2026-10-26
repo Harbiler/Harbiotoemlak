@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { CITY_NAMES, CITIES } from "@/lib/cities";
 import { getCategory } from "@/lib/categories";
 import {
@@ -8,6 +9,7 @@ import {
   supportsBrandModelSearch,
   supportsDetailedSearch,
 } from "@/lib/brand-models";
+import { HEPSI, isHepsi } from "@/lib/filter-all";
 import type { CategorySlug, Listing } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,9 +37,9 @@ export interface FilterState {
 
 export const DEFAULT_FILTERS: FilterState = {
   q: "",
-  city: "all",
-  district: "all",
-  sellerType: "all",
+  city: HEPSI,
+  district: HEPSI,
+  sellerType: HEPSI,
   minPrice: "",
   maxPrice: "",
   sort: "newest",
@@ -46,9 +48,61 @@ export const DEFAULT_FILTERS: FilterState = {
 
 function setDetail(value: FilterState, key: string, next: string): FilterState {
   const details = { ...value.details };
-  if (!next || next === "all") delete details[key];
+  if (isHepsi(next)) delete details[key];
   else details[key] = next;
   return { ...value, details };
+}
+
+type Opt = { value: string; label: string };
+
+function FieldSelect({
+  label,
+  value,
+  onChange,
+  options,
+  allLabel = "Fark etmez",
+  disabled = false,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: Opt[] | string[];
+  allLabel?: string;
+  disabled?: boolean;
+  placeholder?: string;
+}) {
+  const normalized: Opt[] = options.map((o) =>
+    typeof o === "string" ? { value: o, label: o } : o,
+  );
+  const items: Record<string, string> = { [HEPSI]: allLabel };
+  for (const o of normalized) items[o.value] = o.label;
+
+  const current = isHepsi(value) ? HEPSI : value;
+
+  return (
+    <div>
+      <Label className="text-sm">{label}</Label>
+      <Select
+        value={current}
+        onValueChange={(v) => onChange(v ?? HEPSI)}
+        items={items}
+        disabled={disabled}
+      >
+        <SelectTrigger className="mt-1.5 w-full bg-white">
+          <SelectValue placeholder={placeholder ?? allLabel} />
+        </SelectTrigger>
+        <SelectContent className="z-[200] max-h-72">
+          <SelectItem value={HEPSI}>{allLabel}</SelectItem>
+          {normalized.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
 }
 
 export function ListingFilters({
@@ -62,7 +116,10 @@ export function ListingFilters({
   onReset: () => void;
   categorySlug?: string;
 }) {
-  const districts = value.city !== "all" ? CITIES[value.city] ?? [] : [];
+  const city = isHepsi(value.city) ? HEPSI : value.city;
+  const district = isHepsi(value.district) ? HEPSI : value.district;
+  const sellerType = isHepsi(value.sellerType) ? HEPSI : value.sellerType;
+  const districts = city !== HEPSI ? CITIES[city] ?? [] : [];
   const category = categorySlug ? getCategory(categorySlug) : undefined;
   const showDetailed = categorySlug ? supportsDetailedSearch(categorySlug) : false;
   const showBrandModel = categorySlug ? supportsBrandModelSearch(categorySlug) : false;
@@ -83,6 +140,32 @@ export function ListingFilters({
             (f) => f.type === "select" && f.key !== "marka" && f.key !== "model",
           )
         : [];
+
+  const cityItems = useMemo(() => {
+    const map: Record<string, string> = { [HEPSI]: "Tüm iller" };
+    for (const c of CITY_NAMES) map[c] = c;
+    return map;
+  }, []);
+
+  const districtItems = useMemo(() => {
+    const map: Record<string, string> = {
+      [HEPSI]: city === HEPSI ? "Önce il seçin" : "Tüm ilçeler",
+    };
+    for (const d of districts) map[d] = d;
+    return map;
+  }, [city, districts]);
+
+  const sellerItems = {
+    [HEPSI]: "Fark etmez",
+    bireysel: "Bireysel (şahıs)",
+    kurumsal: "Kurumsal (galeri / ofis)",
+  };
+
+  const sortItems = {
+    newest: "En yeni ilanlar",
+    "price-asc": "Fiyat: düşükten yükseğe",
+    "price-desc": "Fiyat: yüksekten düşüğe",
+  };
 
   if (isEmlak) {
     return <EmlakFilters value={value} onChange={onChange} onReset={onReset} />;
@@ -116,73 +199,36 @@ export function ListingFilters({
 
       {showBrandModel && (
         <>
-          <div>
-            <Label>{categorySlug === "yedek-parca" ? "Uyumlu Marka" : "Marka"}</Label>
-            <Select
-              value={value.details.marka ?? "all"}
-              onValueChange={(marka) => {
-                const next = setDetail(value, "marka", marka ?? "all");
-                onChange(setDetail(next, "model", "all"));
-              }}
-            >
-              <SelectTrigger className="mt-1.5 w-full bg-white">
-                <SelectValue placeholder="Tüm markalar" />
-              </SelectTrigger>
-              <SelectContent className="max-h-72">
-                <SelectItem value="all">Tüm markalar</SelectItem>
-                {brands.map((b) => (
-                  <SelectItem key={b} value={b}>
-                    {b}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>{categorySlug === "yedek-parca" ? "Uyumlu Model" : "Model"}</Label>
-            <Select
-              value={value.details.model ?? "all"}
-              onValueChange={(model) => onChange(setDetail(value, "model", model ?? "all"))}
-              disabled={!value.details.marka}
-            >
-              <SelectTrigger className="mt-1.5 w-full bg-white">
-                <SelectValue
-                  placeholder={value.details.marka ? "Tüm modeller" : "Önce marka seçin"}
-                />
-              </SelectTrigger>
-              <SelectContent className="max-h-72">
-                <SelectItem value="all">Tüm modeller</SelectItem>
-                {models.map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {m}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <FieldSelect
+            label={categorySlug === "yedek-parca" ? "Uyumlu Marka" : "Marka"}
+            value={value.details.marka ?? HEPSI}
+            allLabel="Tüm markalar"
+            options={brands}
+            onChange={(marka) => {
+              const next = setDetail(value, "marka", marka);
+              onChange(setDetail(next, "model", HEPSI));
+            }}
+          />
+          <FieldSelect
+            label={categorySlug === "yedek-parca" ? "Uyumlu Model" : "Model"}
+            value={value.details.model ?? HEPSI}
+            allLabel="Tüm modeller"
+            options={models}
+            disabled={!value.details.marka}
+            placeholder={value.details.marka ? "Tüm modeller" : "Önce marka seçin"}
+            onChange={(model) => onChange(setDetail(value, "model", model))}
+          />
         </>
       )}
 
       {extraSelectFields.map((field) => (
-        <div key={field.key}>
-          <Label>{field.label}</Label>
-          <Select
-            value={value.details[field.key] ?? "all"}
-            onValueChange={(v) => onChange(setDetail(value, field.key, v ?? "all"))}
-          >
-            <SelectTrigger className="mt-1.5 w-full bg-white">
-              <SelectValue placeholder="Fark etmez" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Fark etmez</SelectItem>
-              {(field.options ?? []).map((o) => (
-                <SelectItem key={o} value={o}>
-                  {o}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <FieldSelect
+          key={field.key}
+          label={field.label}
+          value={value.details[field.key] ?? HEPSI}
+          options={field.options ?? []}
+          onChange={(v) => onChange(setDetail(value, field.key, v))}
+        />
       ))}
 
       {(categorySlug === "vasita" || categorySlug === "motorsiklet") && (
@@ -215,16 +261,17 @@ export function ListingFilters({
       <div>
         <Label>İl</Label>
         <Select
-          value={value.city}
-          onValueChange={(city) =>
-            onChange({ ...value, city: city ?? "all", district: "all" })
+          value={city}
+          onValueChange={(next) =>
+            onChange({ ...value, city: next ?? HEPSI, district: HEPSI })
           }
+          items={cityItems}
         >
-          <SelectTrigger className="mt-1.5 w-full">
+          <SelectTrigger className="mt-1.5 w-full bg-white">
             <SelectValue placeholder="Tüm iller" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tüm iller</SelectItem>
+          <SelectContent className="z-[200]">
+            <SelectItem value={HEPSI}>Tüm iller</SelectItem>
             {CITY_NAMES.map((c) => (
               <SelectItem key={c} value={c}>
                 {c}
@@ -236,15 +283,16 @@ export function ListingFilters({
       <div>
         <Label>İlçe</Label>
         <Select
-          value={value.district}
-          onValueChange={(district) => onChange({ ...value, district: district ?? "all" })}
-          disabled={value.city === "all"}
+          value={district}
+          onValueChange={(next) => onChange({ ...value, district: next ?? HEPSI })}
+          disabled={city === HEPSI}
+          items={districtItems}
         >
-          <SelectTrigger className="mt-1.5 w-full">
-            <SelectValue placeholder="Tüm ilçeler" />
+          <SelectTrigger className="mt-1.5 w-full bg-white">
+            <SelectValue placeholder={city === HEPSI ? "Önce il seçin" : "Tüm ilçeler"} />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tüm ilçeler</SelectItem>
+          <SelectContent className="z-[200]">
+            <SelectItem value={HEPSI}>Tüm ilçeler</SelectItem>
             {districts.map((d) => (
               <SelectItem key={d} value={d}>
                 {d}
@@ -256,16 +304,17 @@ export function ListingFilters({
       <div>
         <Label>Satıcı tipi</Label>
         <Select
-          value={value.sellerType}
-          onValueChange={(sellerType) =>
-            onChange({ ...value, sellerType: sellerType ?? "all" })
+          value={sellerType}
+          onValueChange={(next) =>
+            onChange({ ...value, sellerType: next ?? HEPSI })
           }
+          items={sellerItems}
         >
-          <SelectTrigger className="mt-1.5 w-full">
-            <SelectValue />
+          <SelectTrigger className="mt-1.5 w-full bg-white">
+            <SelectValue placeholder="Fark etmez" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Fark etmez</SelectItem>
+          <SelectContent className="z-[200]">
+            <SelectItem value={HEPSI}>Fark etmez</SelectItem>
             <SelectItem value="bireysel">Bireysel (şahıs)</SelectItem>
             <SelectItem value="kurumsal">Kurumsal (galeri / ofis)</SelectItem>
           </SelectContent>
@@ -298,13 +347,14 @@ export function ListingFilters({
       <div>
         <Label>Sıralama</Label>
         <Select
-          value={value.sort}
+          value={value.sort || "newest"}
           onValueChange={(sort) => onChange({ ...value, sort: sort ?? "newest" })}
+          items={sortItems}
         >
-          <SelectTrigger className="mt-1.5 w-full">
-            <SelectValue />
+          <SelectTrigger className="mt-1.5 w-full bg-white">
+            <SelectValue placeholder="En yeni ilanlar" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="z-[200]">
             <SelectItem value="newest">En yeni ilanlar</SelectItem>
             <SelectItem value="price-asc">Fiyat: düşükten yükseğe</SelectItem>
             <SelectItem value="price-desc">Fiyat: yüksekten düşüğe</SelectItem>
@@ -342,15 +392,15 @@ export function applyFilters<
       const hay = `${l.title} ${l.description} ${Object.values(l.fields ?? {}).join(" ")}`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
-    if (f.city !== "all" && l.city !== f.city) return false;
-    if (f.district !== "all" && l.district !== f.district) return false;
-    if (f.sellerType !== "all" && l.sellerType !== f.sellerType) return false;
+    if (!isHepsi(f.city) && l.city !== f.city) return false;
+    if (!isHepsi(f.district) && l.district !== f.district) return false;
+    if (!isHepsi(f.sellerType) && l.sellerType !== f.sellerType) return false;
     if (f.minPrice && l.price < Number(f.minPrice)) return false;
     if (f.maxPrice && l.price > Number(f.maxPrice) && l.price > 0) return false;
 
     const fields = l.fields ?? {};
     for (const [key, raw] of Object.entries(f.details)) {
-      if (!raw || raw === "all") continue;
+      if (isHepsi(raw)) continue;
       if (key === "minMetrekare") {
         if (Number(fields.metrekare ?? 0) < Number(raw)) return false;
         continue;
