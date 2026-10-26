@@ -3,7 +3,7 @@
 import { Suspense, useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useListings } from "@/context/listings-context";
-import { CATEGORIES } from "@/lib/categories";
+import { NAV_CATEGORIES } from "@/lib/categories";
 import { ListingCard } from "@/components/listings/listing-card";
 import {
   applyFilters,
@@ -45,7 +45,7 @@ function SearchInner() {
 
   const categoryItems = useMemo(() => {
     const map: Record<string, string> = { [HEPSI]: "Tüm kategoriler" };
-    for (const c of CATEGORIES) map[c.slug] = c.name;
+    for (const c of NAV_CATEGORIES) map[c.slug] = c.name;
     return map;
   }, []);
 
@@ -106,7 +106,7 @@ function SearchInner() {
               </SelectTrigger>
               <SelectContent className="z-[200]">
                 <SelectItem value={HEPSI}>Tüm kategoriler</SelectItem>
-                {CATEGORIES.map((c) => (
+                {NAV_CATEGORIES.map((c) => (
                   <SelectItem key={c.slug} value={c.slug}>
                     {c.name}
                   </SelectItem>
@@ -161,7 +161,7 @@ function SearchInner() {
                 </SelectTrigger>
                 <SelectContent className="z-[200]">
                   <SelectItem value={HEPSI}>Tüm kategoriler</SelectItem>
-                  {CATEGORIES.map((c) => (
+                  {NAV_CATEGORIES.map((c) => (
                     <SelectItem key={c.slug} value={c.slug}>
                       {c.name}
                     </SelectItem>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, Plus, Search, Shield, LogOut, User as UserIcon } from "lucide-react";
-import { CATEGORIES } from "@/lib/categories";
+import { NAV_CATEGORIES } from "@/lib/categories";
 import { useAuth } from "@/context/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,7 +68,7 @@ export function SiteHeader() {
                 </Button>
               </form>
               <nav className="mt-4 flex flex-col gap-1 pb-8">
-                {CATEGORIES.map((c) => (
+                {NAV_CATEGORIES.map((c) => (
                   <Link
                     key={c.slug}
                     href={`/kategori/${c.slug}`}
@@ -108,7 +108,7 @@ export function SiteHeader() {
         </form>
 
         <nav className="hidden items-center gap-0.5 xl:flex">
-          {CATEGORIES.slice(0, 4).map((c) => (
+          {NAV_CATEGORIES.slice(0, 4).map((c) => (
             <Link
               key={c.slug}
               href={`/kategori/${c.slug}`}
@@ -127,7 +127,7 @@ export function SiteHeader() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              {CATEGORIES.slice(4).map((c) => (
+              {NAV_CATEGORIES.slice(4).map((c) => (
                 <DropdownMenuItem key={c.slug} asChild>
                   <Link href={`/kategori/${c.slug}`}>{c.name}</Link>
                 </DropdownMenuItem>

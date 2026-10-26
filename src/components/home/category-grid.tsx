@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { CATEGORIES } from "@/lib/categories";
+import { NAV_CATEGORIES } from "@/lib/categories";
 import { CategoryIcon } from "@/components/category-icon";
 
 export function CategoryGrid() {
   return (
     <section className="mx-auto max-w-6xl px-4 pt-4 pb-12 sm:px-6 sm:pb-14">
       <ul className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3 lg:grid-cols-4 animate-[fadeUp_0.7s_ease-out_0.05s_both]">
-        {CATEGORIES.map((c) => (
+        {NAV_CATEGORIES.map((c) => (
           <li key={c.slug}>
             <Link
               href={`/kategori/${c.slug}`}

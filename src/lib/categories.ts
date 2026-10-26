@@ -501,6 +501,18 @@ export const CATEGORIES: CategoryDef[] = [
   },
 ];
 
+/** Top-level categories hidden from homepage / nav (still reachable by URL; motorsiklet lives under Vasıta). */
+export const HIDDEN_NAV_CATEGORY_SLUGS = new Set([
+  "motorsiklet",
+  "hayvanlar",
+  "ozel-ders",
+]);
+
+/** Categories shown on homepage, header, footer, and listing category pickers. */
+export const NAV_CATEGORIES: CategoryDef[] = CATEGORIES.filter(
+  (c) => !HIDDEN_NAV_CATEGORY_SLUGS.has(c.slug),
+);
+
 export function getCategory(slug: string): CategoryDef | undefined {
   return CATEGORIES.find((c) => c.slug === slug);
 }

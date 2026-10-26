@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CATEGORIES, getCategory, type CategoryField } from "@/lib/categories";
+import { NAV_CATEGORIES, getCategory, type CategoryField } from "@/lib/categories";
 import { CITY_NAMES, CITIES } from "@/lib/cities";
 import { useAuth } from "@/context/auth-context";
 import { useListings } from "@/context/listings-context";
@@ -255,13 +255,13 @@ export function ListingForm({
               }))
             }
             disabled={!!listing && !adminMode}
-            items={Object.fromEntries(CATEGORIES.map((c) => [c.slug, c.name]))}
+            items={Object.fromEntries(NAV_CATEGORIES.map((c) => [c.slug, c.name]))}
           >
             <SelectTrigger className="mt-1.5 w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="z-[200]">
-              {CATEGORIES.map((c) => (
+              {NAV_CATEGORIES.map((c) => (
                 <SelectItem key={c.slug} value={c.slug}>
                   {c.name}
                 </SelectItem>

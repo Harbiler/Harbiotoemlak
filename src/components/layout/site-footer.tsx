@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CATEGORIES } from "@/lib/categories";
+import { NAV_CATEGORIES } from "@/lib/categories";
 import { BrandLogo } from "@/components/brand-logo";
 
 export function SiteFooter() {
@@ -18,7 +18,7 @@ export function SiteFooter() {
             Kategoriler
           </p>
           <ul className="mt-4 grid grid-cols-1 gap-2 text-sm text-white/80 sm:grid-cols-2 lg:grid-cols-1">
-            {CATEGORIES.map((c) => (
+            {NAV_CATEGORIES.map((c) => (
               <li key={c.slug}>
                 <Link href={`/kategori/${c.slug}`} className="transition hover:text-white">
                   {c.name}

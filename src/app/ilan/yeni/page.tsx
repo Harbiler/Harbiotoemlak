@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
 import { useListings } from "@/context/listings-context";
-import { CATEGORIES, getCategory } from "@/lib/categories";
+import { NAV_CATEGORIES, getCategory } from "@/lib/categories";
 import { CITY_NAMES, CITIES } from "@/lib/cities";
 import type { CategorySlug, ListingStatus } from "@/lib/types";
 import { formatPrice } from "@/lib/format";
@@ -226,7 +226,7 @@ function NewListingWizard() {
         <div className="mt-8 space-y-3">
           <p className="text-sm font-medium text-[var(--ink)]">Kategori seçin</p>
           <div className="grid gap-2 sm:grid-cols-2">
-            {CATEGORIES.map((c) => (
+            {NAV_CATEGORIES.map((c) => (
               <button
                 key={c.slug}
                 type="button"
