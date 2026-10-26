@@ -1,12 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  ALL_DISTRICT_OPTIONS,
-  CITY_NAMES,
-  districtOptionValue,
-  parseDistrictValue,
-} from "@/lib/cities";
+import { CITIES, CITY_NAMES } from "@/lib/cities";
 import { HEPSI, isHepsi } from "@/lib/filter-all";
 import type { FilterState } from "@/components/listings/listing-filters";
 import { Input } from "@/components/ui/input";
@@ -70,10 +65,10 @@ export function EmlakFilters({
   const [gelismis, setGelismis] = useState(false);
   const city = isHepsi(value.city) ? HEPSI : value.city.normalize("NFC");
   const district = isHepsi(value.district) ? HEPSI : value.district;
-  const districtValue =
-    city !== HEPSI && district !== HEPSI
-      ? districtOptionValue(city, district)
-      : HEPSI;
+  const districts =
+    city !== HEPSI
+      ? CITIES[city] ?? CITIES[city.normalize("NFC")] ?? []
+      : [];
   const d = value.details;
 
   return (
@@ -122,31 +117,21 @@ export function EmlakFilters({
         <div>
           <Label className="text-sm">İlçe</Label>
           <NativeSelect
+            key={`ilce-${city}`}
             className="mt-1.5"
-            value={districtValue}
-            onChange={(next) => {
-              if (isHepsi(next)) {
-                onChange({ ...value, district: HEPSI });
-                return;
-              }
-              const parsed = parseDistrictValue(next);
-              if (!parsed) {
-                onChange({ ...value, district: next || HEPSI });
-                return;
-              }
-              onChange({
-                ...value,
-                city: parsed.city,
-                district: parsed.district,
-              });
-            }}
-            options={[
-              { value: HEPSI, label: "Tüm ilçeler" },
-              ...ALL_DISTRICT_OPTIONS.map((o) => ({
-                value: o.value,
-                label: o.label,
-              })),
-            ]}
+            value={city === HEPSI ? HEPSI : district}
+            disabled={city === HEPSI}
+            onChange={(next) =>
+              onChange({ ...value, district: next || HEPSI })
+            }
+            options={
+              city === HEPSI
+                ? [{ value: HEPSI, label: "Önce il seçin" }]
+                : [
+                    { value: HEPSI, label: "Tüm ilçeler" },
+                    ...districts.map((x) => ({ value: x, label: x })),
+                  ]
+            }
           />
         </div>
 
