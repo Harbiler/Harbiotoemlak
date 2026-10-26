@@ -151,18 +151,19 @@ export default function CategoryPage({
       ) : (
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 lg:grid-cols-[260px_1fr] sm:px-6">
           <aside className="space-y-4">
-            {isPetHotels && (
+            {isPetHotels ? (
               <PetHotelLocationBar
                 location={location}
                 matchCount={location.coords ? nearbyPetHotels.length : undefined}
               />
+            ) : (
+              <ListingFilters
+                value={filters}
+                onChange={setFilters}
+                onReset={() => setFilters({ ...DEFAULT_FILTERS, details: {} })}
+                categorySlug={category.slug}
+              />
             )}
-            <ListingFilters
-              value={filters}
-              onChange={setFilters}
-              onReset={() => setFilters({ ...DEFAULT_FILTERS, details: {} })}
-              categorySlug={category.slug}
-            />
           </aside>
           <div>
             <p className="mb-4 text-sm text-[var(--muted-foreground)]">
