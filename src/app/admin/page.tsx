@@ -424,6 +424,11 @@ export default function AdminPage() {
                     <TableCell className="text-sm">
                       <p>{app.email}</p>
                       <p className="text-xs text-stone-500">{app.phone}</p>
+                      {app.address ? (
+                        <p className="mt-1 max-w-[220px] text-xs text-stone-500">
+                          {app.address}
+                        </p>
+                      ) : null}
                     </TableCell>
                     <TableCell className="text-sm">
                       <div className="flex flex-col gap-1">

@@ -72,6 +72,8 @@ export interface PetHotelApplication {
   fullName: string;
   email: string;
   phone: string;
+  /** Tesis / başvuran adresi (yeni başvurularda zorunlu) */
+  address?: string;
   idDocument: PetHotelApplicationFile;
   residenceDocument: PetHotelApplicationFile;
   status: PetHotelApplicationStatus;

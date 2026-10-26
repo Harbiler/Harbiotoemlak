@@ -7,6 +7,7 @@ import type { PetHotelApplicationFile } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, Hotel, Upload } from "lucide-react";
 
@@ -39,6 +40,7 @@ export default function PetHotelApplyPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [idFile, setIdFile] = useState<File | null>(null);
   const [residenceFile, setResidenceFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +53,10 @@ export default function PetHotelApplyPage() {
 
     if (!fullName.trim() || !email.trim() || !phone.trim()) {
       setError("İsim soyisim, e-posta ve telefon zorunludur.");
+      return;
+    }
+    if (!address.trim()) {
+      setError("Adres zorunludur.");
       return;
     }
     if (!idFile || !residenceFile) {
@@ -68,6 +74,7 @@ export default function PetHotelApplyPage() {
         fullName: fullName.trim(),
         email: email.trim(),
         phone: phone.trim(),
+        address: address.trim(),
         idDocument,
         residenceDocument,
       });
@@ -171,6 +178,19 @@ export default function PetHotelApplyPage() {
             placeholder="05xx xxx xx xx"
             required
             className="h-10 bg-white"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="address">Adres</Label>
+          <Textarea
+            id="address"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            placeholder="Tesisin açık adresi (il, ilçe, mahalle, sokak, no)"
+            required
+            rows={3}
+            className="bg-white"
           />
         </div>
 
