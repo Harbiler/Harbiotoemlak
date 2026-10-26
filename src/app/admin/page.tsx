@@ -8,11 +8,13 @@ import { useListings } from "@/context/listings-context";
 import { getCategory, CATEGORIES } from "@/lib/categories";
 import { formatPrice } from "@/lib/format";
 import {
+  approvePendingCaregiverApplications,
   approvePendingPetHotelApplications,
-  loadPetHotelApplications,
+  updateCaregiverApplicationStatus,
   updatePetHotelApplicationStatus,
 } from "@/lib/storage";
 import type {
+  CaregiverApplication,
   Listing,
   ListingStatus,
   PetHotelApplication,
@@ -71,6 +73,9 @@ export default function AdminPage() {
   const [deleteTarget, setDeleteTarget] = useState<Listing | null>(null);
   const [userDelete, setUserDelete] = useState<User | null>(null);
   const [petApps, setPetApps] = useState<PetHotelApplication[]>([]);
+  const [caregiverApps, setCaregiverApps] = useState<CaregiverApplication[]>(
+    [],
+  );
 
   const statusItems = {
     [HEPSI]: "Tüm durumlar",
@@ -93,11 +98,16 @@ export default function AdminPage() {
   useEffect(() => {
     if (ready && user?.role === "admin") {
       setPetApps(approvePendingPetHotelApplications());
+      setCaregiverApps(approvePendingCaregiverApplications());
     }
   }, [ready, user]);
 
   function refreshPetApps() {
     setPetApps(approvePendingPetHotelApplications());
+  }
+
+  function refreshCaregiverApps() {
+    setCaregiverApps(approvePendingCaregiverApplications());
   }
 
   const filtered = useMemo(() => {
@@ -188,6 +198,14 @@ export default function AdminPage() {
             {petApps.filter((a) => a.status === "pending").length > 0 && (
               <Badge className="ml-1 bg-[var(--lagoon)]">
                 {petApps.filter((a) => a.status === "pending").length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="caregivers">
+            Bakıcı başvuruları
+            {caregiverApps.filter((a) => a.status === "pending").length > 0 && (
+              <Badge className="ml-1 bg-[var(--lagoon)]">
+                {caregiverApps.filter((a) => a.status === "pending").length}
               </Badge>
             )}
           </TabsTrigger>
@@ -492,6 +510,126 @@ export default function AdminPage() {
                   <TableRow>
                     <TableCell colSpan={5} className="py-8 text-center text-sm text-stone-500">
                       Henüz pet otel başvurusu yok.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="caregivers" className="mt-4">
+          <div className="overflow-x-auto hb-surface">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Başvuran</TableHead>
+                  <TableHead>İletişim</TableHead>
+                  <TableHead>Belgeler</TableHead>
+                  <TableHead>Durum</TableHead>
+                  <TableHead className="text-right">İşlem</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {caregiverApps.map((app) => (
+                  <TableRow key={app.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={app.profilePhoto.dataUrl}
+                          alt=""
+                          className="size-10 rounded-full object-cover"
+                        />
+                        <div>
+                          <p className="font-medium">{app.fullName}</p>
+                          <p className="text-xs text-stone-500">
+                            {new Date(app.createdAt).toLocaleString("tr-TR")}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      <p>{app.email}</p>
+                      <p className="text-xs text-stone-500">{app.phone}</p>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      <div className="flex flex-col gap-1">
+                        <a
+                          href={app.residenceDocument.dataUrl}
+                          download={app.residenceDocument.name}
+                          className="text-[var(--lagoon)] hover:underline"
+                        >
+                          İkametgâh: {app.residenceDocument.name}
+                        </a>
+                        <a
+                          href={app.criminalRecordDocument.dataUrl}
+                          download={app.criminalRecordDocument.name}
+                          className="text-[var(--lagoon)] hover:underline"
+                        >
+                          Sabıka: {app.criminalRecordDocument.name}
+                        </a>
+                        <a
+                          href={app.profilePhoto.dataUrl}
+                          download={app.profilePhoto.name}
+                          className="text-[var(--lagoon)] hover:underline"
+                        >
+                          Profil: {app.profilePhoto.name}
+                        </a>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">
+                        {app.status === "pending"
+                          ? "Bekliyor"
+                          : app.status === "reviewed"
+                            ? "Onaylandı"
+                            : "Reddedildi"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        {app.status !== "reviewed" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              updateCaregiverApplicationStatus(
+                                app.id,
+                                "reviewed",
+                              );
+                              refreshCaregiverApps();
+                            }}
+                          >
+                            Onayla
+                          </Button>
+                        )}
+                        {app.status !== "rejected" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              updateCaregiverApplicationStatus(
+                                app.id,
+                                "rejected",
+                              );
+                              refreshCaregiverApps();
+                            }}
+                          >
+                            Reddet
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {caregiverApps.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="py-8 text-center text-sm text-stone-500"
+                    >
+                      Henüz bakıcı başvurusu yok.
                     </TableCell>
                   </TableRow>
                 )}

@@ -59,6 +59,7 @@ export interface AuthSession {
 }
 
 export type PetHotelApplicationStatus = "pending" | "reviewed" | "rejected";
+export type CaregiverApplicationStatus = "pending" | "reviewed" | "rejected";
 
 export interface PetHotelApplicationFile {
   name: string;
@@ -66,6 +67,9 @@ export interface PetHotelApplicationFile {
   size: number;
   dataUrl: string;
 }
+
+/** Shared uploaded file payload for partner applications. */
+export type ApplicationFile = PetHotelApplicationFile;
 
 export interface PetHotelApplication {
   id: string;
@@ -77,6 +81,18 @@ export interface PetHotelApplication {
   idDocument: PetHotelApplicationFile;
   residenceDocument: PetHotelApplicationFile;
   status: PetHotelApplicationStatus;
+  createdAt: string;
+}
+
+export interface CaregiverApplication {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  residenceDocument: ApplicationFile;
+  criminalRecordDocument: ApplicationFile;
+  profilePhoto: ApplicationFile;
+  status: CaregiverApplicationStatus;
   createdAt: string;
 }
 

@@ -22,7 +22,7 @@ import { useCustomerLocation } from "@/hooks/use-customer-location";
 import { supportsDetailedSearch } from "@/lib/brand-models";
 import { filterListingsWithinKm, PET_HOTEL_RADIUS_KM } from "@/lib/geo";
 import { Button } from "@/components/ui/button";
-import { Hotel, Plus } from "lucide-react";
+import { HeartHandshake, Hotel, Plus } from "lucide-react";
 
 export default function CategoryPage({
   params,
@@ -35,6 +35,7 @@ export default function CategoryPage({
   const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS, details: {} });
   const location = useCustomerLocation();
   const isPetHotels = category?.slug === "evcil-hayvan-otelleri";
+  const isCaregivers = category?.slug === "bakici-arayanlar";
 
   const listings = useMemo(() => {
     if (!category) return [];
@@ -107,6 +108,18 @@ export default function CategoryPage({
                 <Link href="/evcil-hayvan-hoteli-ol">
                   <Hotel className="size-4" />
                   Evcil Hayvan Hoteli Ol
+                </Link>
+              </Button>
+            )}
+            {isCaregivers && (
+              <Button
+                asChild
+                variant="outline"
+                className="border-[color-mix(in_oklab,var(--lagoon)_35%,transparent)] bg-white/80 text-[var(--lagoon)] hover:bg-[var(--mist)] hover:text-[var(--lagoon)]"
+              >
+                <Link href="/bakici-ol">
+                  <HeartHandshake className="size-4" />
+                  Bakıcı Olmak İstiyorum
                 </Link>
               </Button>
             )}

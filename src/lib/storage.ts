@@ -1,12 +1,18 @@
 import { SEED_LISTINGS, SEED_USERS } from "./seed";
-import type { Listing, PetHotelApplication, User } from "./types";
+import type {
+  CaregiverApplication,
+  Listing,
+  PetHotelApplication,
+  User,
+} from "./types";
 
 const USERS_KEY = "harbidenbak.users";
 const LISTINGS_KEY = "harbidenbak.listings";
 const SESSION_KEY = "harbidenbak.session";
 const PET_HOTEL_APPS_KEY = "harbidenbak.petHotelApplications";
+const CAREGIVER_APPS_KEY = "harbidenbak.caregiverApplications";
 const VERSION_KEY = "harbidenbak.seedVersion";
-const SEED_VERSION = "12";
+const SEED_VERSION = "13";
 
 function canUseStorage(): boolean {
   return typeof window !== "undefined" && !!window.localStorage;
@@ -142,10 +148,72 @@ export function updatePetHotelApplicationStatus(
   savePetHotelApplications(apps);
 }
 
+export function loadCaregiverApplications(): CaregiverApplication[] {
+  if (!canUseStorage()) return [];
+  try {
+    const apps = JSON.parse(
+      localStorage.getItem(CAREGIVER_APPS_KEY) || "[]",
+    ) as CaregiverApplication[];
+    let changed = false;
+    const next = apps.map((a) => {
+      if (a.status !== "pending") return a;
+      changed = true;
+      return { ...a, status: "reviewed" as const };
+    });
+    if (changed) saveCaregiverApplications(next);
+    return next;
+  } catch {
+    return [];
+  }
+}
+
+export function saveCaregiverApplications(apps: CaregiverApplication[]): void {
+  if (!canUseStorage()) return;
+  localStorage.setItem(CAREGIVER_APPS_KEY, JSON.stringify(apps));
+}
+
+export function addCaregiverApplication(
+  app: Omit<CaregiverApplication, "id" | "status" | "createdAt">,
+): CaregiverApplication {
+  const next: CaregiverApplication = {
+    ...app,
+    id: `caregiver-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    status: "reviewed",
+    createdAt: new Date().toISOString(),
+  };
+  const apps = loadCaregiverApplications();
+  apps.unshift(next);
+  saveCaregiverApplications(apps);
+  return next;
+}
+
+export function approvePendingCaregiverApplications(): CaregiverApplication[] {
+  const apps = loadCaregiverApplications();
+  let changed = false;
+  const next = apps.map((a) => {
+    if (a.status !== "pending") return a;
+    changed = true;
+    return { ...a, status: "reviewed" as const };
+  });
+  if (changed) saveCaregiverApplications(next);
+  return next;
+}
+
+export function updateCaregiverApplicationStatus(
+  id: string,
+  status: CaregiverApplication["status"],
+): void {
+  const apps = loadCaregiverApplications().map((a) =>
+    a.id === id ? { ...a, status } : a,
+  );
+  saveCaregiverApplications(apps);
+}
+
 export function resetDemoData(): void {
   if (!canUseStorage()) return;
   localStorage.setItem(USERS_KEY, JSON.stringify(SEED_USERS));
   localStorage.setItem(LISTINGS_KEY, JSON.stringify(SEED_LISTINGS));
   localStorage.setItem(PET_HOTEL_APPS_KEY, JSON.stringify([]));
+  localStorage.setItem(CAREGIVER_APPS_KEY, JSON.stringify([]));
   localStorage.setItem(VERSION_KEY, SEED_VERSION);
 }
