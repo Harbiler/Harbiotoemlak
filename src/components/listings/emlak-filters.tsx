@@ -1,18 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { CITY_NAMES, CITIES } from "@/lib/cities";
 import { HEPSI, isHepsi } from "@/lib/filter-all";
 import type { FilterState } from "@/components/listings/listing-filters";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
@@ -31,37 +25,30 @@ function FieldSelect({
   onChange,
   options,
   allLabel = "Fark etmez",
+  disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   options: Opt[] | string[];
   allLabel?: string;
+  disabled?: boolean;
 }) {
   const normalized: Opt[] = options.map((o) =>
     typeof o === "string" ? { value: o, label: o } : o,
   );
-  const items: Record<string, string> = { [HEPSI]: allLabel };
-  for (const o of normalized) items[o.value] = o.label;
-
   const current = isHepsi(value) ? HEPSI : value;
 
   return (
     <div>
       <Label className="text-sm">{label}</Label>
-      <Select value={current} onValueChange={(v) => onChange(v ?? HEPSI)} items={items}>
-        <SelectTrigger className="mt-1.5 w-full bg-white">
-          <SelectValue placeholder={allLabel} />
-        </SelectTrigger>
-        <SelectContent className="z-[200]">
-          <SelectItem value={HEPSI}>{allLabel}</SelectItem>
-          {normalized.map((o) => (
-            <SelectItem key={o.value} value={o.value}>
-              {o.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <NativeSelect
+        className="mt-1.5"
+        disabled={disabled}
+        value={current}
+        onChange={onChange}
+        options={[{ value: HEPSI, label: allLabel }, ...normalized]}
+      />
     </div>
   );
 }
@@ -80,26 +67,6 @@ export function EmlakFilters({
   const district = isHepsi(value.district) ? HEPSI : value.district;
   const districts = city !== HEPSI ? CITIES[city] ?? [] : [];
   const d = value.details;
-
-  const cityItems = useMemo(() => {
-    const map: Record<string, string> = { [HEPSI]: "Tüm iller" };
-    for (const c of CITY_NAMES) map[c] = c;
-    return map;
-  }, []);
-
-  const districtItems = useMemo(() => {
-    const map: Record<string, string> = {
-      [HEPSI]: city === HEPSI ? "Önce il seçin" : "Tüm ilçeler",
-    };
-    for (const x of districts) map[x] = x;
-    return map;
-  }, [city, districts]);
-
-  const sortItems = {
-    newest: "En yeni ilanlar",
-    "price-asc": "Fiyat: düşükten yükseğe",
-    "price-desc": "Fiyat: yüksekten düşüğe",
-  };
 
   return (
     <div className="hb-surface space-y-4 p-4">
@@ -127,47 +94,34 @@ export function EmlakFilters({
 
         <div>
           <Label className="text-sm">İl</Label>
-          <Select
+          <NativeSelect
+            className="mt-1.5"
             value={city}
-            onValueChange={(next) =>
-              onChange({ ...value, city: next ?? HEPSI, district: HEPSI })
+            onChange={(next) =>
+              onChange({ ...value, city: next || HEPSI, district: HEPSI })
             }
-            items={cityItems}
-          >
-            <SelectTrigger className="mt-1.5 w-full bg-white">
-              <SelectValue placeholder="Tüm iller" />
-            </SelectTrigger>
-            <SelectContent className="z-[200]">
-              <SelectItem value={HEPSI}>Tüm iller</SelectItem>
-              {CITY_NAMES.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            options={[
+              { value: HEPSI, label: "Tüm iller" },
+              ...CITY_NAMES.map((c) => ({ value: c, label: c })),
+            ]}
+          />
         </div>
 
         <div>
           <Label className="text-sm">İlçe</Label>
-          <Select
+          <NativeSelect
+            className="mt-1.5"
             value={district}
-            onValueChange={(next) => onChange({ ...value, district: next ?? HEPSI })}
             disabled={city === HEPSI}
-            items={districtItems}
-          >
-            <SelectTrigger className="mt-1.5 w-full bg-white">
-              <SelectValue placeholder={city === HEPSI ? "Önce il seçin" : "Tüm ilçeler"} />
-            </SelectTrigger>
-            <SelectContent className="z-[200]">
-              <SelectItem value={HEPSI}>Tüm ilçeler</SelectItem>
-              {districts.map((x) => (
-                <SelectItem key={x} value={x}>
-                  {x}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onChange={(next) => onChange({ ...value, district: next || HEPSI })}
+            options={[
+              {
+                value: HEPSI,
+                label: city === HEPSI ? "Önce il seçin" : "Tüm ilçeler",
+              },
+              ...districts.map((x) => ({ value: x, label: x })),
+            ]}
+          />
         </div>
 
         <FieldSelect
@@ -197,7 +151,7 @@ export function EmlakFilters({
             placeholder="Örn. 1000000"
             value={value.minPrice}
             onChange={(e) => onChange({ ...value, minPrice: e.target.value })}
-            className="mt-1.5"
+            className="mt-1.5 bg-white"
           />
         </div>
         <div>
@@ -211,7 +165,7 @@ export function EmlakFilters({
             placeholder="Örn. 5000000"
             value={value.maxPrice}
             onChange={(e) => onChange({ ...value, maxPrice: e.target.value })}
-            className="mt-1.5"
+            className="mt-1.5 bg-white"
           />
         </div>
         <div>
@@ -225,7 +179,7 @@ export function EmlakFilters({
             placeholder="Örn. 80"
             value={d.minMetrekare ?? ""}
             onChange={(e) => onChange(setDetail(value, "minMetrekare", e.target.value))}
-            className="mt-1.5"
+            className="mt-1.5 bg-white"
           />
         </div>
         <div>
@@ -239,27 +193,23 @@ export function EmlakFilters({
             placeholder="Örn. 200"
             value={d.maxMetrekare ?? ""}
             onChange={(e) => onChange(setDetail(value, "maxMetrekare", e.target.value))}
-            className="mt-1.5"
+            className="mt-1.5 bg-white"
           />
         </div>
       </div>
 
       <div className="max-w-sm">
         <Label className="text-sm">Sıralama</Label>
-        <Select
+        <NativeSelect
+          className="mt-1.5"
           value={value.sort || "newest"}
-          onValueChange={(sort) => onChange({ ...value, sort: sort ?? "newest" })}
-          items={sortItems}
-        >
-          <SelectTrigger className="mt-1.5 w-full bg-white">
-            <SelectValue placeholder="En yeni ilanlar" />
-          </SelectTrigger>
-          <SelectContent className="z-[200]">
-            <SelectItem value="newest">En yeni ilanlar</SelectItem>
-            <SelectItem value="price-asc">Fiyat: düşükten yükseğe</SelectItem>
-            <SelectItem value="price-desc">Fiyat: yüksekten düşüğe</SelectItem>
-          </SelectContent>
-        </Select>
+          onChange={(sort) => onChange({ ...value, sort: sort || "newest" })}
+          options={[
+            { value: "newest", label: "En yeni ilanlar" },
+            { value: "price-asc", label: "Fiyat: düşükten yükseğe" },
+            { value: "price-desc", label: "Fiyat: yüksekten düşüğe" },
+          ]}
+        />
       </div>
 
       <Button
