@@ -17,6 +17,9 @@ import {
   ListingsEmpty,
   ListingsLoading,
 } from "@/components/listings/listing-states";
+import { PetHotelLocationBar } from "@/components/listings/pet-hotel-location-bar";
+import { useCustomerLocation } from "@/hooks/use-customer-location";
+import { filterListingsWithinKm, PET_HOTEL_RADIUS_KM } from "@/lib/geo";
 import { Button } from "@/components/ui/button";
 import { Hotel, Plus } from "lucide-react";
 
@@ -29,13 +32,27 @@ export default function CategoryPage({
   const category = getCategory(slug);
   const { getByCategory, ready } = useListings();
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const location = useCustomerLocation();
+  const isPetHotels = category?.slug === "evcil-hayvan-otelleri";
 
   const listings = useMemo(() => {
     if (!category) return [];
     return getByCategory(category.slug as CategorySlug);
   }, [category, getByCategory]);
 
-  const filtered = useMemo(() => applyFilters(listings, filters), [listings, filters]);
+  const nearbyPetHotels = useMemo(() => {
+    if (!isPetHotels || !location.coords) return [];
+    return filterListingsWithinKm(listings, location.coords, PET_HOTEL_RADIUS_KM);
+  }, [isPetHotels, listings, location.coords]);
+
+  const filtered = useMemo(() => {
+    if (isPetHotels) {
+      if (!location.coords) return [];
+      const next = applyFilters(nearbyPetHotels, filters);
+      return [...next].sort((a, b) => a.distanceKm - b.distanceKm);
+    }
+    return applyFilters(listings, filters);
+  }, [isPetHotels, location.coords, nearbyPetHotels, listings, filters]);
 
   if (!category) {
     return (
@@ -72,10 +89,15 @@ export default function CategoryPage({
                 {category.name}
               </h1>
               <p className="mt-1 max-w-xl text-[var(--muted-foreground)]">{category.description}</p>
+              {isPetHotels && (
+                <p className="mt-2 text-sm font-medium text-[var(--lagoon)]">
+                  Müşteri konumuna {PET_HOTEL_RADIUS_KM} km mesafedeki oteller listelenir.
+                </p>
+              )}
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            {category.slug === "evcil-hayvan-otelleri" && (
+            {isPetHotels && (
               <Button
                 asChild
                 variant="outline"
@@ -98,7 +120,13 @@ export default function CategoryPage({
       </div>
 
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 lg:grid-cols-[260px_1fr] sm:px-6">
-        <aside>
+        <aside className="space-y-4">
+          {isPetHotels && (
+            <PetHotelLocationBar
+              location={location}
+              matchCount={location.coords ? nearbyPetHotels.length : undefined}
+            />
+          )}
           <ListingFilters
             value={filters}
             onChange={setFilters}
@@ -107,19 +135,40 @@ export default function CategoryPage({
         </aside>
         <div>
           <p className="mb-4 text-sm text-[var(--muted-foreground)]">
-            {ready ? `${filtered.length} ilan` : "Yükleniyor…"}
+            {!ready
+              ? "Yükleniyor…"
+              : isPetHotels && !location.coords
+                ? "Konum bekleniyor"
+                : `${filtered.length} ilan`}
           </p>
           {!ready ? (
             <ListingsLoading />
+          ) : isPetHotels && !location.coords ? (
+            <ListingsEmpty
+              title="Konumunuzu paylaşın"
+              hint={`Evcil hayvan otellerini görmek için konumunuzu kullanın veya ilçe seçin. Yalnızca ${PET_HOTEL_RADIUS_KM} km içindeki tesisler listelenir.`}
+            />
           ) : filtered.length === 0 ? (
             <ListingsEmpty
-              title={`${category.name} kategorisinde ilan yok`}
-              hint="Filtreleri değiştirin veya ilk ilanı siz verin."
+              title={
+                isPetHotels
+                  ? `${PET_HOTEL_RADIUS_KM} km içinde otel bulunamadı`
+                  : `${category.name} kategorisinde ilan yok`
+              }
+              hint={
+                isPetHotels
+                  ? "Farklı bir ilçe seçin veya konumunuzu güncelleyin."
+                  : "Filtreleri değiştirin veya ilk ilanı siz verin."
+              }
             />
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {filtered.map((l) => (
-                <ListingCard key={l.id} listing={l} />
+                <ListingCard
+                  key={l.id}
+                  listing={l}
+                  distanceKm={"distanceKm" in l ? (l.distanceKm as number) : undefined}
+                />
               ))}
             </div>
           )}

@@ -5,9 +5,16 @@ import { PhotoPlaceholder } from "./photo-placeholder";
 import { SellerBadge } from "./seller-badge";
 import { getSellerBadge } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { formatDistanceKm } from "@/lib/geo";
 import { MapPin } from "lucide-react";
 
-export function ListingCard({ listing }: { listing: Listing }) {
+export function ListingCard({
+  listing,
+  distanceKm,
+}: {
+  listing: Listing;
+  distanceKm?: number;
+}) {
   const badge = getSellerBadge(listing);
   const isCorporate = badge !== "bireysel";
 
@@ -33,6 +40,11 @@ export function ListingCard({ listing }: { listing: Listing }) {
             Öne çıkan
           </span>
         )}
+        {typeof distanceKm === "number" && (
+          <span className="absolute right-2 top-2 rounded-md bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-[var(--lagoon)] shadow-sm">
+            {formatDistanceKm(distanceKm)}
+          </span>
+        )}
       </div>
       <div className="flex flex-1 flex-col gap-2.5 p-4">
         <div className="flex items-center justify-between gap-2">
@@ -40,6 +52,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
             <MapPin className="size-3 shrink-0" />
             <span className="truncate">
               {listing.city} / {listing.district}
+              {typeof distanceKm === "number" ? ` · ${formatDistanceKm(distanceKm)}` : ""}
             </span>
           </p>
           <SellerBadge listing={listing} />
