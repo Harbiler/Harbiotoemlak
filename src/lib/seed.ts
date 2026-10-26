@@ -200,7 +200,7 @@ export const SEED_LISTINGS: Listing[] = [
     createdAt: daysAgo(3),
     updatedAt: daysAgo(3),
     fields: {
-      emlakTipi: "Residence",
+      emlakTipi: "Rezidans",
       ilanTipi: "Satılık",
       metrekare: 68,
       netMetrekare: 55,

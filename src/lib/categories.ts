@@ -32,7 +32,7 @@ export const CATEGORIES: CategoryDef[] = [
         key: "emlakTipi",
         label: "Emlak Tipi",
         type: "select",
-        options: ["Daire", "Villa", "Müstakil Ev", "İşyeri", "Arsa", "Yazlık", "Residence", "Köşk"],
+        options: ["Daire", "Villa", "Müstakil Ev", "İşyeri", "Arsa", "Yazlık", "Rezidans", "Köşk"],
         required: true,
       },
       {

@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { EmlakFilters } from "@/components/listings/emlak-filters";
 
 export interface FilterState {
   q: string;
@@ -71,25 +72,21 @@ export function ListingFilters({
     : [];
 
   const isEmlak = categorySlug === "emlak";
-  const emlakFields = isEmlak
-    ? (category?.fields.filter((f) => f.type === "select") ?? [])
-    : [];
 
   const extraSelectFields =
-    category && showDetailed && !showBrandModel && !isEmlak
-      ? []
-      : category && showDetailed && categorySlug === "yedek-parca"
+    category && showDetailed && categorySlug === "yedek-parca"
+      ? category.fields.filter(
+          (f) => f.type === "select" && f.key !== "marka" && f.key !== "model",
+        )
+      : category && showBrandModel
         ? category.fields.filter(
             (f) => f.type === "select" && f.key !== "marka" && f.key !== "model",
           )
-        : category && showBrandModel
-          ? category.fields.filter(
-              (f) =>
-                f.type === "select" &&
-                f.key !== "marka" &&
-                f.key !== "model",
-            )
-          : [];
+        : [];
+
+  if (isEmlak) {
+    return <EmlakFilters value={value} onChange={onChange} onReset={onReset} />;
+  }
 
   return (
     <div className="hb-surface space-y-4 p-4">
@@ -99,27 +96,23 @@ export function ListingFilters({
             Detaylı arama
           </p>
           <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-            {isEmlak
-              ? "Oda, kat, m², bina yaşı ve tüm emlak özelliklerine göre arayın."
-              : showBrandModel
-                ? "Tüm marka ve modellere göre daraltın."
-                : "Özelliklere göre daraltın."}
+            {showBrandModel
+              ? "Tüm marka ve modellere göre daraltın."
+              : "Özelliklere göre daraltın."}
           </p>
         </div>
       )}
 
-      {!isEmlak && (
-        <div>
-          <Label htmlFor="q">Ara</Label>
-          <Input
-            id="q"
-            placeholder="Başlık veya açıklama…"
-            value={value.q}
-            onChange={(e) => onChange({ ...value, q: e.target.value })}
-            className="mt-1.5"
-          />
-        </div>
-      )}
+      <div>
+        <Label htmlFor="q">Ara</Label>
+        <Input
+          id="q"
+          placeholder="Başlık veya açıklama…"
+          value={value.q}
+          onChange={(e) => onChange({ ...value, q: e.target.value })}
+          className="mt-1.5"
+        />
+      </div>
 
       {showBrandModel && (
         <>
@@ -170,28 +163,6 @@ export function ListingFilters({
         </>
       )}
 
-      {emlakFields.map((field) => (
-        <div key={field.key}>
-          <Label>{field.label}</Label>
-          <Select
-            value={value.details[field.key] ?? "all"}
-            onValueChange={(v) => onChange(setDetail(value, field.key, v ?? "all"))}
-          >
-            <SelectTrigger className="mt-1.5 w-full bg-white">
-              <SelectValue placeholder={`Tüm ${field.label.toLowerCase()}`} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tümü</SelectItem>
-              {(field.options ?? []).map((o) => (
-                <SelectItem key={o} value={o}>
-                  {o}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      ))}
-
       {extraSelectFields.map((field) => (
         <div key={field.key}>
           <Label>{field.label}</Label>
@@ -200,10 +171,10 @@ export function ListingFilters({
             onValueChange={(v) => onChange(setDetail(value, field.key, v ?? "all"))}
           >
             <SelectTrigger className="mt-1.5 w-full bg-white">
-              <SelectValue placeholder="Tümü" />
+              <SelectValue placeholder="Fark etmez" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tümü</SelectItem>
+              <SelectItem value="all">Fark etmez</SelectItem>
               {(field.options ?? []).map((o) => (
                 <SelectItem key={o} value={o}>
                   {o}
@@ -214,63 +185,10 @@ export function ListingFilters({
         </div>
       ))}
 
-      {isEmlak && (
-        <>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label htmlFor="minM2">Min brüt m²</Label>
-              <Input
-                id="minM2"
-                type="number"
-                inputMode="numeric"
-                value={value.details.minMetrekare ?? ""}
-                onChange={(e) => onChange(setDetail(value, "minMetrekare", e.target.value))}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label htmlFor="maxM2">Max brüt m²</Label>
-              <Input
-                id="maxM2"
-                type="number"
-                inputMode="numeric"
-                value={value.details.maxMetrekare ?? ""}
-                onChange={(e) => onChange(setDetail(value, "maxMetrekare", e.target.value))}
-                className="mt-1.5"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label htmlFor="minNet">Min net m²</Label>
-              <Input
-                id="minNet"
-                type="number"
-                inputMode="numeric"
-                value={value.details.minNetMetrekare ?? ""}
-                onChange={(e) => onChange(setDetail(value, "minNetMetrekare", e.target.value))}
-                className="mt-1.5"
-              />
-            </div>
-            <div>
-              <Label htmlFor="maxNet">Max net m²</Label>
-              <Input
-                id="maxNet"
-                type="number"
-                inputMode="numeric"
-                value={value.details.maxNetMetrekare ?? ""}
-                onChange={(e) => onChange(setDetail(value, "maxNetMetrekare", e.target.value))}
-                className="mt-1.5"
-              />
-            </div>
-          </div>
-        </>
-      )}
-
       {(categorySlug === "vasita" || categorySlug === "motorsiklet") && (
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <Label htmlFor="minYil">Min yıl</Label>
+            <Label htmlFor="minYil">En az yıl</Label>
             <Input
               id="minYil"
               type="number"
@@ -281,7 +199,7 @@ export function ListingFilters({
             />
           </div>
           <div>
-            <Label htmlFor="maxYil">Max yıl</Label>
+            <Label htmlFor="maxYil">En fazla yıl</Label>
             <Input
               id="maxYil"
               type="number"
@@ -347,15 +265,15 @@ export function ListingFilters({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Hepsi</SelectItem>
-            <SelectItem value="bireysel">Bireysel</SelectItem>
-            <SelectItem value="kurumsal">Kurumsal</SelectItem>
+            <SelectItem value="all">Fark etmez</SelectItem>
+            <SelectItem value="bireysel">Bireysel (şahıs)</SelectItem>
+            <SelectItem value="kurumsal">Kurumsal (galeri / ofis)</SelectItem>
           </SelectContent>
         </Select>
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <Label htmlFor="min">Min ₺</Label>
+          <Label htmlFor="min">En az ₺</Label>
           <Input
             id="min"
             type="number"
@@ -366,7 +284,7 @@ export function ListingFilters({
           />
         </div>
         <div>
-          <Label htmlFor="max">Max ₺</Label>
+          <Label htmlFor="max">En fazla ₺</Label>
           <Input
             id="max"
             type="number"
@@ -387,9 +305,9 @@ export function ListingFilters({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="newest">En yeni</SelectItem>
-            <SelectItem value="price-asc">Fiyat (artan)</SelectItem>
-            <SelectItem value="price-desc">Fiyat (azalan)</SelectItem>
+            <SelectItem value="newest">En yeni ilanlar</SelectItem>
+            <SelectItem value="price-asc">Fiyat: düşükten yükseğe</SelectItem>
+            <SelectItem value="price-desc">Fiyat: yüksekten düşüğe</SelectItem>
           </SelectContent>
         </Select>
       </div>
