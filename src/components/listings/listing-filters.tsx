@@ -1,6 +1,5 @@
 "use client";
 
-import { CITIES, CITY_NAMES } from "@/lib/cities";
 import { getCategory } from "@/lib/categories";
 import {
   brandNames,
@@ -10,6 +9,7 @@ import {
 } from "@/lib/brand-models";
 import { HEPSI, isHepsi } from "@/lib/filter-all";
 import type { CategorySlug, Listing } from "@/lib/types";
+import { CityDistrictFields } from "@/components/listings/city-district-fields";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -93,13 +93,7 @@ export function ListingFilters({
   onReset: () => void;
   categorySlug?: string;
 }) {
-  const city = isHepsi(value.city) ? HEPSI : value.city.normalize("NFC");
-  const district = isHepsi(value.district) ? HEPSI : value.district;
   const sellerType = isHepsi(value.sellerType) ? HEPSI : value.sellerType;
-  const districts =
-    city !== HEPSI
-      ? CITIES[city] ?? CITIES[city.normalize("NFC")] ?? []
-      : [];
   const category = categorySlug ? getCategory(categorySlug) : undefined;
   const showDetailed = categorySlug ? supportsDetailedSearch(categorySlug) : false;
   const showBrandModel = categorySlug ? supportsBrandModelSearch(categorySlug) : false;
@@ -211,38 +205,20 @@ export function ListingFilters({
         </div>
       )}
 
-      <div>
-        <Label>İl</Label>
-        <NativeSelect
-          className="mt-1.5"
-          value={city}
-          onChange={(next) =>
-            onChange({ ...value, city: next || HEPSI, district: HEPSI })
-          }
-          options={[
-            { value: HEPSI, label: "Tüm iller" },
-            ...CITY_NAMES.map((c) => ({ value: c, label: c })),
-          ]}
-        />
-      </div>
-      <div>
-        <Label>İlçe</Label>
-        <NativeSelect
-          key={`ilce-${city}`}
-          className="mt-1.5"
-          value={city === HEPSI ? HEPSI : district}
-          disabled={city === HEPSI}
-          onChange={(next) => onChange({ ...value, district: next || HEPSI })}
-          options={
-            city === HEPSI
-              ? [{ value: HEPSI, label: "Önce il seçin" }]
-              : [
-                  { value: HEPSI, label: "Tüm ilçeler" },
-                  ...districts.map((d) => ({ value: d, label: d })),
-                ]
-          }
-        />
-      </div>
+      <CityDistrictFields
+        city={value.city}
+        district={value.district}
+        onCityChange={(next) =>
+          onChange({ ...value, city: next || HEPSI, district: HEPSI })
+        }
+        onDistrictChange={(next, selectedCity) =>
+          onChange({
+            ...value,
+            city: selectedCity || value.city || HEPSI,
+            district: next || HEPSI,
+          })
+        }
+      />
       <div>
         <Label>Satıcı tipi</Label>
         <NativeSelect

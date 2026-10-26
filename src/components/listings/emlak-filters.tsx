@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { CITIES, CITY_NAMES } from "@/lib/cities";
 import { HEPSI, isHepsi } from "@/lib/filter-all";
 import type { FilterState } from "@/components/listings/listing-filters";
+import { CityDistrictFields } from "@/components/listings/city-district-fields";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -63,12 +63,6 @@ export function EmlakFilters({
   onReset: () => void;
 }) {
   const [gelismis, setGelismis] = useState(false);
-  const city = isHepsi(value.city) ? HEPSI : value.city.normalize("NFC");
-  const district = isHepsi(value.district) ? HEPSI : value.district;
-  const districts =
-    city !== HEPSI
-      ? CITIES[city] ?? CITIES[city.normalize("NFC")] ?? []
-      : [];
   const d = value.details;
 
   return (
@@ -95,45 +89,20 @@ export function EmlakFilters({
           options={["Daire", "Villa", "Müstakil Ev", "Rezidans", "Yazlık", "İşyeri", "Arsa", "Köşk"]}
         />
 
-        <div>
-          <Label className="text-sm">İl</Label>
-          <NativeSelect
-            className="mt-1.5"
-            value={city}
-            onChange={(next) =>
-              onChange({
-                ...value,
-                city: next || HEPSI,
-                district: HEPSI,
-              })
-            }
-            options={[
-              { value: HEPSI, label: "Tüm iller" },
-              ...CITY_NAMES.map((c) => ({ value: c, label: c })),
-            ]}
-          />
-        </div>
-
-        <div>
-          <Label className="text-sm">İlçe</Label>
-          <NativeSelect
-            key={`ilce-${city}`}
-            className="mt-1.5"
-            value={city === HEPSI ? HEPSI : district}
-            disabled={city === HEPSI}
-            onChange={(next) =>
-              onChange({ ...value, district: next || HEPSI })
-            }
-            options={
-              city === HEPSI
-                ? [{ value: HEPSI, label: "Önce il seçin" }]
-                : [
-                    { value: HEPSI, label: "Tüm ilçeler" },
-                    ...districts.map((x) => ({ value: x, label: x })),
-                  ]
-            }
-          />
-        </div>
+        <CityDistrictFields
+          city={value.city}
+          district={value.district}
+          onCityChange={(next) =>
+            onChange({ ...value, city: next || HEPSI, district: HEPSI })
+          }
+          onDistrictChange={(next, selectedCity) =>
+            onChange({
+              ...value,
+              city: selectedCity || value.city || HEPSI,
+              district: next || HEPSI,
+            })
+          }
+        />
 
         <FieldSelect
           label="Oda sayısı"
