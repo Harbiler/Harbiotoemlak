@@ -9,14 +9,14 @@ export function HomeHero() {
     <section className="relative isolate min-h-[min(92vh,780px)] overflow-hidden">
       {/* Full-bleed dominant visual plane */}
       <div
-        className="absolute inset-0 origin-center animate-[heroPan_1.4s_ease-out_both] bg-[linear-gradient(152deg,#062a32_0%,#0a4a4f_36%,#0d6e6e_62%,#1a567a_88%)]"
+        className="absolute inset-0 origin-center animate-[heroPan_1.4s_ease-out_both] bg-[linear-gradient(152deg,#4a1830_0%,#9d174d_34%,#db2777_62%,#f472b6_92%)]"
         aria-hidden
       />
       <div
         className="absolute inset-0 opacity-[0.4]"
         style={{
           backgroundImage:
-            "radial-gradient(ellipse at 20% 30%, rgba(255,255,255,0.28) 0%, transparent 42%), radial-gradient(ellipse at 85% 15%, rgba(212,165,116,0.18) 0%, transparent 38%), radial-gradient(ellipse at 60% 90%, rgba(0,0,0,0.28) 0%, transparent 50%)",
+            "radial-gradient(ellipse at 20% 30%, rgba(255,255,255,0.28) 0%, transparent 42%), radial-gradient(ellipse at 85% 15%, rgba(251,207,232,0.35) 0%, transparent 38%), radial-gradient(ellipse at 60% 90%, rgba(74,24,48,0.35) 0%, transparent 50%)",
         }}
         aria-hidden
       />

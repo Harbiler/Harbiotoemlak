@@ -162,7 +162,7 @@ export function ListingDetailClient({ id }: { id: string }) {
                   size="icon"
                   aria-label={fav ? "Favoriden çıkar" : "Favorile"}
                   onClick={() => toggleFavorite(listing.id)}
-                  className={fav ? "border-teal-300 text-teal-700" : ""}
+                  className={fav ? "border-rose-300 text-rose-600" : ""}
                 >
                   <Heart className={`size-4 ${fav ? "fill-current" : ""}`} />
                 </Button>
@@ -255,7 +255,7 @@ export function ListingDetailClient({ id }: { id: string }) {
                 İlan no: {ilanNo} · {formatDate(listing.createdAt)}
               </p>
               <Button
-                className="mt-4 w-full bg-[var(--lagoon)] hover:bg-[#0a5a5a]"
+                className="mt-4 w-full bg-[var(--lagoon)] hover:bg-[#be185d]"
                 onClick={() => setShowPhone(true)}
               >
                 <Phone className="size-4" />

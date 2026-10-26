@@ -26,7 +26,7 @@ export const CATEGORIES: CategoryDef[] = [
     shortName: "Emlak",
     description: "Konut, işyeri, arsa ve kiralık gayrimenkul ilanları",
     icon: "building",
-    accent: "#0F766E",
+    accent: "#DB2777",
     fields: [
       {
         key: "emlakTipi",
@@ -64,7 +64,7 @@ export const CATEGORIES: CategoryDef[] = [
     shortName: "Vasıta",
     description: "Otomobil, SUV, ticari araç ve ikinci el araç ilanları",
     icon: "car",
-    accent: "#1D4E89",
+    accent: "#BE185D",
     fields: [
       { key: "marka", label: "Marka", type: "text", required: true },
       { key: "model", label: "Model", type: "text", required: true },
@@ -99,7 +99,7 @@ export const CATEGORIES: CategoryDef[] = [
     shortName: "Motorsiklet",
     description: "Motosiklet, scooter ve ATV ilanları",
     icon: "bike",
-    accent: "#B45309",
+    accent: "#EC4899",
     fields: [
       { key: "marka", label: "Marka", type: "text", required: true },
       { key: "model", label: "Model", type: "text", required: true },
@@ -120,7 +120,7 @@ export const CATEGORIES: CategoryDef[] = [
     shortName: "Yedek Parça",
     description: "Orijinal ve yan sanayi yedek parça, lastik, aksesuar",
     icon: "wrench",
-    accent: "#475569",
+    accent: "#F472B6",
     fields: [
       {
         key: "parcaTipi",
@@ -152,7 +152,7 @@ export const CATEGORIES: CategoryDef[] = [
     shortName: "İş Makineleri",
     description: "Kepçe, forklift, jeneratör ve sanayi ekipmanları",
     icon: "factory",
-    accent: "#854D0E",
+    accent: "#E11D48",
     fields: [
       {
         key: "makineTipi",
@@ -179,7 +179,7 @@ export const CATEGORIES: CategoryDef[] = [
     shortName: "Ustalar",
     description: "Tadilat, tesisat, elektrik ve profesyonel hizmet ilanları",
     icon: "hammer",
-    accent: "#9A3412",
+    accent: "#DB2777",
     fields: [
       {
         key: "hizmet",
@@ -213,7 +213,7 @@ export const CATEGORIES: CategoryDef[] = [
     shortName: "Hayvanlar",
     description: "Evcil hayvan, çiftlik hayvanı ve pet ürünleri",
     icon: "paw",
-    accent: "#166534",
+    accent: "#F43F5E",
     fields: [
       {
         key: "tur",
@@ -244,7 +244,7 @@ export const CATEGORIES: CategoryDef[] = [
     shortName: "Pet Otelleri",
     description: "Pet otel, pansiyon ve geçici bakım hizmetleri",
     icon: "hotel",
-    accent: "#0E7490",
+    accent: "#FB7185",
     fields: [
       { key: "tesisAdi", label: "Tesis Adı", type: "text", required: true },
       {
@@ -270,7 +270,7 @@ export const CATEGORIES: CategoryDef[] = [
     shortName: "Yardımcı",
     description: "Ev yardımcısı, gündelikçi ve temizlik personeli arayanlar",
     icon: "home-care",
-    accent: "#7C2D12",
+    accent: "#BE185D",
     fields: [
       {
         key: "pozisyon",
@@ -301,7 +301,7 @@ export const CATEGORIES: CategoryDef[] = [
     shortName: "Bakıcı",
     description: "Bebek bakıcısı, yaşlı bakımı ve hasta bakımı ilanları",
     icon: "heart",
-    accent: "#C2410C",
+    accent: "#E879F9",
     fields: [
       {
         key: "bakimTipi",
@@ -332,7 +332,7 @@ export const CATEGORIES: CategoryDef[] = [
     shortName: "Özel Ders",
     description: "Matematik, dil, müzik ve sınav hazırlık özel dersleri",
     icon: "book",
-    accent: "#1E40AF",
+    accent: "#D946EF",
     fields: [
       {
         key: "ders",
@@ -368,7 +368,7 @@ export const CATEGORIES: CategoryDef[] = [
     shortName: "İş İlanları",
     description: "Tam zamanlı, part-time ve staj pozisyonları",
     icon: "briefcase",
-    accent: "#334155",
+    accent: "#9D174D",
     fields: [
       { key: "pozisyon", label: "Pozisyon", type: "text", required: true },
       {

@@ -436,7 +436,7 @@ function NewListingWizard() {
             </Button>
             <Button
               type="button"
-              className="bg-[var(--lagoon)] hover:bg-[#0a5a5a]"
+              className="bg-[var(--lagoon)] hover:bg-[#be185d]"
               onClick={() => {
                 const err = validateForm();
                 if (err) setError(err);
@@ -490,7 +490,7 @@ function NewListingWizard() {
             </Button>
             <Button
               type="button"
-              className="bg-[var(--lagoon)] hover:bg-[#0a5a5a]"
+              className="bg-[var(--lagoon)] hover:bg-[#be185d]"
               onClick={publish}
             >
               Yayınla

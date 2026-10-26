@@ -224,7 +224,7 @@ export function ListingForm({
         </Alert>
       )}
 
-      <div className="space-y-4 rounded-xl border border-teal-900/10 bg-white/70 p-5">
+      <div className="space-y-4 rounded-xl border border-pink-500/20 bg-[color-mix(in_oklab,#fff7fa_90%,#fce7f0)] p-5">
         <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold text-[var(--ink)]">
           Temel bilgiler
         </h2>
@@ -332,7 +332,7 @@ export function ListingForm({
       </div>
 
       {categoryFields.length > 0 && (
-        <div className="space-y-4 rounded-xl border border-teal-900/10 bg-white/70 p-5">
+        <div className="space-y-4 rounded-xl border border-pink-500/20 bg-[color-mix(in_oklab,#fff7fa_90%,#fce7f0)] p-5">
           <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold text-[var(--ink)]">
             {category?.name} detayları
           </h2>
@@ -373,7 +373,7 @@ export function ListingForm({
         </div>
       )}
 
-      <div className="space-y-4 rounded-xl border border-teal-900/10 bg-white/70 p-5">
+      <div className="space-y-4 rounded-xl border border-pink-500/20 bg-[color-mix(in_oklab,#fff7fa_90%,#fce7f0)] p-5">
         <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold text-[var(--ink)]">
           İletişim
         </h2>
@@ -428,7 +428,7 @@ export function ListingForm({
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Button type="submit" disabled={saving} className="bg-[var(--lagoon)] hover:bg-[#0a5a5a]">
+        <Button type="submit" disabled={saving} className="bg-[var(--lagoon)] hover:bg-[#be185d]">
           {listing ? "Kaydet" : "İlanı yayınla"}
         </Button>
         <Button type="button" variant="outline" onClick={() => router.back()}>

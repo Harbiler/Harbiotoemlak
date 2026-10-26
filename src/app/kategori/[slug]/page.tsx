@@ -61,7 +61,7 @@ export default function CategoryPage({
         <p className="mt-2 text-[var(--muted-foreground)]">
           Bu kategori Harbiden Bak&apos;ta yok.
         </p>
-        <Button asChild className="mt-6 bg-[var(--lagoon)] hover:bg-[#0a5a5a]">
+        <Button asChild className="mt-6 bg-[var(--lagoon)] hover:bg-[#be185d]">
           <Link href="/">Ana sayfa</Link>
         </Button>
       </div>
@@ -109,7 +109,7 @@ export default function CategoryPage({
                 </Link>
               </Button>
             )}
-            <Button asChild className="bg-[var(--lagoon)] hover:bg-[#0a5a5a]">
+            <Button asChild className="bg-[var(--lagoon)] hover:bg-[#be185d]">
               <Link href={`/ilan/yeni?kategori=${category.slug}`}>
                 <Plus className="size-4" />
                 Bu kategoride ilan ver

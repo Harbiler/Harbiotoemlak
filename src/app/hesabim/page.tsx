@@ -43,11 +43,11 @@ export default function AccountPage() {
             </Badge>
             {user.kurumsalType === "galeri" && <Badge>Galeri</Badge>}
             {user.kurumsalType === "emlak" && <Badge>Emlak</Badge>}
-            {user.role === "admin" && <Badge className="bg-teal-800">Admin</Badge>}
+            {user.role === "admin" && <Badge className="bg-pink-700">Admin</Badge>}
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button asChild className="bg-[var(--lagoon)] hover:bg-[#0a5a5a]">
+          <Button asChild className="bg-[var(--lagoon)] hover:bg-[#be185d]">
             <Link href="/ilan/yeni">İlan Ver</Link>
           </Button>
           {user.role === "admin" && (

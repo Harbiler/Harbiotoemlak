@@ -22,14 +22,14 @@ export function BrandLogo({
           "relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-xl sm:size-9",
           inverted
             ? "bg-white/15 ring-1 ring-white/25"
-            : "bg-[linear-gradient(145deg,#14b8a6_0%,#0d6e6e_55%,#0a5555_100%)] shadow-[0_6px_16px_-6px_rgba(13,110,110,0.45)]",
+            : "bg-[linear-gradient(145deg,#f472b6_0%,#db2777_55%,#be185d_100%)] shadow-[0_6px_16px_-6px_rgba(190,24,93,0.55)]",
           markClassName,
         )}
         aria-hidden
       >
         <svg
           viewBox="0 0 32 32"
-          className="size-[18px] text-white sm:size-5"
+          className={cn("size-[18px] sm:size-5", inverted ? "text-white" : "text-white")}
           fill="none"
         >
           <path
@@ -37,14 +37,14 @@ export function BrandLogo({
             fill="currentColor"
             opacity="0.95"
           />
-          <circle cx="16" cy="13.2" r="2.1" fill={inverted ? "#0d6e6e" : "#e6fffa"} />
+          <circle cx="16" cy="13.2" r="2.1" fill={inverted ? "#be185d" : "#fff0f6"} />
         </svg>
       </span>
       {showWordmark ? (
         <span
           className={cn(
             "hb-display text-xl font-extrabold tracking-tight sm:text-2xl",
-            inverted ? "text-white" : "text-[var(--ink)]",
+            inverted ? "text-white" : "text-[var(--lagoon)]",
             wordmarkClassName,
           )}
         >

@@ -55,7 +55,7 @@ export function PetHotelLocationBar({
         <Button
           type="button"
           size="sm"
-          className="bg-[var(--lagoon)] hover:bg-[#0a5a5a]"
+          className="bg-[var(--lagoon)] hover:bg-[#be185d]"
           onClick={location.requestGps}
           disabled={location.status === "locating"}
         >
