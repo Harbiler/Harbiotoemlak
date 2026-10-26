@@ -70,13 +70,13 @@ export function ListingFilters({
     ? modelsForBrand(categorySlug, value.details.marka ?? "")
     : [];
 
-  const emlakFields =
-    categorySlug === "emlak"
-      ? (category?.fields.filter((f) => f.type === "select") ?? [])
-      : [];
+  const isEmlak = categorySlug === "emlak";
+  const emlakFields = isEmlak
+    ? (category?.fields.filter((f) => f.type === "select") ?? [])
+    : [];
 
   const extraSelectFields =
-    category && showDetailed && !showBrandModel && categorySlug !== "emlak"
+    category && showDetailed && !showBrandModel && !isEmlak
       ? []
       : category && showDetailed && categorySlug === "yedek-parca"
         ? category.fields.filter(
@@ -99,23 +99,27 @@ export function ListingFilters({
             Detaylı arama
           </p>
           <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-            {showBrandModel
-              ? "Tüm marka ve modellere göre daraltın."
-              : "Emlak tipine ve özelliklere göre daraltın."}
+            {isEmlak
+              ? "Oda, kat, m², bina yaşı ve tüm emlak özelliklerine göre arayın."
+              : showBrandModel
+                ? "Tüm marka ve modellere göre daraltın."
+                : "Özelliklere göre daraltın."}
           </p>
         </div>
       )}
 
-      <div>
-        <Label htmlFor="q">Ara</Label>
-        <Input
-          id="q"
-          placeholder="Başlık veya açıklama…"
-          value={value.q}
-          onChange={(e) => onChange({ ...value, q: e.target.value })}
-          className="mt-1.5"
-        />
-      </div>
+      {!isEmlak && (
+        <div>
+          <Label htmlFor="q">Ara</Label>
+          <Input
+            id="q"
+            placeholder="Başlık veya açıklama…"
+            value={value.q}
+            onChange={(e) => onChange({ ...value, q: e.target.value })}
+            className="mt-1.5"
+          />
+        </div>
+      )}
 
       {showBrandModel && (
         <>
@@ -210,31 +214,57 @@ export function ListingFilters({
         </div>
       ))}
 
-      {categorySlug === "emlak" && (
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <Label htmlFor="minM2">Min m²</Label>
-            <Input
-              id="minM2"
-              type="number"
-              inputMode="numeric"
-              value={value.details.minMetrekare ?? ""}
-              onChange={(e) => onChange(setDetail(value, "minMetrekare", e.target.value))}
-              className="mt-1.5"
-            />
+      {isEmlak && (
+        <>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label htmlFor="minM2">Min brüt m²</Label>
+              <Input
+                id="minM2"
+                type="number"
+                inputMode="numeric"
+                value={value.details.minMetrekare ?? ""}
+                onChange={(e) => onChange(setDetail(value, "minMetrekare", e.target.value))}
+                className="mt-1.5"
+              />
+            </div>
+            <div>
+              <Label htmlFor="maxM2">Max brüt m²</Label>
+              <Input
+                id="maxM2"
+                type="number"
+                inputMode="numeric"
+                value={value.details.maxMetrekare ?? ""}
+                onChange={(e) => onChange(setDetail(value, "maxMetrekare", e.target.value))}
+                className="mt-1.5"
+              />
+            </div>
           </div>
-          <div>
-            <Label htmlFor="maxM2">Max m²</Label>
-            <Input
-              id="maxM2"
-              type="number"
-              inputMode="numeric"
-              value={value.details.maxMetrekare ?? ""}
-              onChange={(e) => onChange(setDetail(value, "maxMetrekare", e.target.value))}
-              className="mt-1.5"
-            />
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label htmlFor="minNet">Min net m²</Label>
+              <Input
+                id="minNet"
+                type="number"
+                inputMode="numeric"
+                value={value.details.minNetMetrekare ?? ""}
+                onChange={(e) => onChange(setDetail(value, "minNetMetrekare", e.target.value))}
+                className="mt-1.5"
+              />
+            </div>
+            <div>
+              <Label htmlFor="maxNet">Max net m²</Label>
+              <Input
+                id="maxNet"
+                type="number"
+                inputMode="numeric"
+                value={value.details.maxNetMetrekare ?? ""}
+                onChange={(e) => onChange(setDetail(value, "maxNetMetrekare", e.target.value))}
+                className="mt-1.5"
+              />
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {(categorySlug === "vasita" || categorySlug === "motorsiklet") && (
@@ -411,12 +441,26 @@ export function applyFilters<
         if (Number(fields.metrekare ?? 0) > Number(raw)) return false;
         continue;
       }
+      if (key === "minNetMetrekare") {
+        if (Number(fields.netMetrekare ?? 0) < Number(raw)) return false;
+        continue;
+      }
+      if (key === "maxNetMetrekare") {
+        if (Number(fields.netMetrekare ?? 0) > Number(raw)) return false;
+        continue;
+      }
       if (key === "minYil") {
         if (Number(fields.yil ?? 0) < Number(raw)) return false;
         continue;
       }
       if (key === "maxYil") {
         if (Number(fields.yil ?? 0) > Number(raw)) return false;
+        continue;
+      }
+      // Legacy: listings may still store "7 / 10" in kat
+      if (key === "bulunduguKat" && fields.bulunduguKat === undefined && fields.kat) {
+        const floor = String(fields.kat).split("/")[0]?.trim();
+        if (floor !== raw) return false;
         continue;
       }
       const actual = fields[key];
