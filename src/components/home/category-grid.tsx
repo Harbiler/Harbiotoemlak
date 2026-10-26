@@ -4,16 +4,8 @@ import { CategoryIcon } from "@/components/category-icon";
 
 export function CategoryGrid() {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-      <div className="max-w-xl">
-        <h2 className="hb-display text-3xl font-bold tracking-tight text-[var(--ink)] sm:text-4xl">
-          Kategoriler
-        </h2>
-        <p className="mt-2 text-[var(--muted-foreground)]">
-          Emlaktan vasıtaya, ustadan iş ilanına — aradığınız her şey burada.
-        </p>
-      </div>
-      <ul className="mt-12 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
+    <section className="mx-auto max-w-6xl px-4 pt-4 pb-12 sm:px-6 sm:pb-14">
+      <ul className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3 lg:grid-cols-4 animate-[fadeUp_0.7s_ease-out_0.05s_both]">
         {CATEGORIES.map((c) => (
           <li key={c.slug}>
             <Link
