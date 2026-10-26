@@ -71,32 +71,6 @@ export default function HomePage() {
         </section>
       )}
 
-      <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
-        <div className="relative overflow-hidden rounded-[1.75rem] bg-[linear-gradient(160deg,#4a1830_0%,#9d174d_42%,#db2777_100%)] px-6 py-14 text-white sm:px-12">
-          <div
-            className="pointer-events-none absolute inset-0 opacity-40"
-            style={{
-              backgroundImage:
-                "radial-gradient(ellipse at 80% 20%, rgba(251,207,232,0.45), transparent 50%)",
-            }}
-          />
-          <div className="relative max-w-xl">
-            <h2 className="hb-display text-3xl font-bold sm:text-4xl">
-              Galeri veya emlak ofisinizi Harbiden Bak&apos;a taşıyın
-            </h2>
-            <p className="mt-3 text-white/70">
-              Kurumsal üyelikle portföyünüzü yönetin, bireysel alıcılara ulaşın. Üye olmak ücretsiz.
-            </p>
-            <Button
-              asChild
-              size="lg"
-              className="mt-7 h-11 bg-white text-[var(--ink)] transition hover:bg-white/90 hover:scale-[1.02]"
-            >
-              <Link href="/uye-ol">Kurumsal üye ol</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
     </>
   );
 }
