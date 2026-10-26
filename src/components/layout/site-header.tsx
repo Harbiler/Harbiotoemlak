@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Heart, Menu, Plus, Search, Shield, LogOut, User as UserIcon } from "lucide-react";
+import { Menu, Plus, Search, Shield, LogOut, User as UserIcon } from "lucide-react";
 import { CATEGORIES } from "@/lib/categories";
 import { useAuth } from "@/context/auth-context";
 import { Button } from "@/components/ui/button";
@@ -137,16 +137,6 @@ export function SiteHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-          <Button asChild variant="ghost" size="icon" className="md:hidden" aria-label="Ara">
-            <Link href="/ara">
-              <Search className="size-4" />
-            </Link>
-          </Button>
-          <Button asChild variant="ghost" size="icon" aria-label="Favoriler">
-            <Link href="/favoriler">
-              <Heart className="size-4" />
-            </Link>
-          </Button>
           {ready && user ? (
             <>
               <Button
