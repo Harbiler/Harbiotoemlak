@@ -510,17 +510,17 @@ export const HIDDEN_NAV_CATEGORY_SLUGS = new Set([
 
 /**
  * Homepage / nav order (4-col desktop).
- * Row starts so Evcil Hayvan Otelleri | Bakıcı Arayanlar | İş Makineleri sit side by side.
+ * Row: Evcil Hayvan Otelleri | Bakıcı Arayanlar | Ustalar | İş Makineleri
  */
 export const NAV_CATEGORY_ORDER: CategorySlug[] = [
   "emlak",
   "vasita",
   "yedek-parca",
-  "ustalar",
+  "yardimci-arayanlar",
   "evcil-hayvan-otelleri",
   "bakici-arayanlar",
+  "ustalar",
   "is-makineleri",
-  "yardimci-arayanlar",
   "is-ilanlari",
 ];
 
