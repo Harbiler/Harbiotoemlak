@@ -119,62 +119,92 @@ export default function CategoryPage({
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 lg:grid-cols-[260px_1fr] sm:px-6">
-        <aside className="space-y-4">
-          {isPetHotels && (
-            <PetHotelLocationBar
-              location={location}
-              matchCount={location.coords ? nearbyPetHotels.length : undefined}
-            />
-          )}
+      {category.slug === "emlak" ? (
+        <div className="mx-auto max-w-6xl space-y-8 px-4 py-10 sm:px-6">
           <ListingFilters
             value={filters}
             onChange={setFilters}
             onReset={() => setFilters({ ...DEFAULT_FILTERS, details: {} })}
             categorySlug={category.slug}
           />
-        </aside>
-        <div>
-          <p className="mb-4 text-sm text-[var(--muted-foreground)]">
-            {!ready
-              ? "Yükleniyor…"
-              : isPetHotels && !location.coords
-                ? "Konum bekleniyor"
-                : `${filtered.length} ilan`}
-          </p>
-          {!ready ? (
-            <ListingsLoading />
-          ) : isPetHotels && !location.coords ? (
-            <ListingsEmpty
-              title="Konumunuzu paylaşın"
-              hint={`Evcil hayvan otellerini görmek için konumunuzu kullanın veya ilçe seçin. Yalnızca ${PET_HOTEL_RADIUS_KM} km içindeki tesisler listelenir.`}
-            />
-          ) : filtered.length === 0 ? (
-            <ListingsEmpty
-              title={
-                isPetHotels
-                  ? `${PET_HOTEL_RADIUS_KM} km içinde otel bulunamadı`
-                  : `${category.name} kategorisinde ilan yok`
-              }
-              hint={
-                isPetHotels
-                  ? "Farklı bir ilçe seçin veya konumunuzu güncelleyin."
-                  : "Filtreleri değiştirin veya ilk ilanı siz verin."
-              }
-            />
-          ) : (
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-              {filtered.map((l) => (
-                <ListingCard
-                  key={l.id}
-                  listing={l}
-                  distanceKm={"distanceKm" in l ? (l.distanceKm as number) : undefined}
-                />
-              ))}
-            </div>
-          )}
+          <div>
+            <p className="mb-4 text-sm text-[var(--muted-foreground)]">
+              {!ready ? "Yükleniyor…" : `${filtered.length} ilan`}
+            </p>
+            {!ready ? (
+              <ListingsLoading />
+            ) : filtered.length === 0 ? (
+              <ListingsEmpty
+                title={`${category.name} kategorisinde ilan yok`}
+                hint="Filtreleri değiştirin veya ilk ilanı siz verin."
+              />
+            ) : (
+              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                {filtered.map((l) => (
+                  <ListingCard key={l.id} listing={l} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 lg:grid-cols-[260px_1fr] sm:px-6">
+          <aside className="space-y-4">
+            {isPetHotels && (
+              <PetHotelLocationBar
+                location={location}
+                matchCount={location.coords ? nearbyPetHotels.length : undefined}
+              />
+            )}
+            <ListingFilters
+              value={filters}
+              onChange={setFilters}
+              onReset={() => setFilters({ ...DEFAULT_FILTERS, details: {} })}
+              categorySlug={category.slug}
+            />
+          </aside>
+          <div>
+            <p className="mb-4 text-sm text-[var(--muted-foreground)]">
+              {!ready
+                ? "Yükleniyor…"
+                : isPetHotels && !location.coords
+                  ? "Konum bekleniyor"
+                  : `${filtered.length} ilan`}
+            </p>
+            {!ready ? (
+              <ListingsLoading />
+            ) : isPetHotels && !location.coords ? (
+              <ListingsEmpty
+                title="Konumunuzu paylaşın"
+                hint={`Evcil hayvan otellerini görmek için konumunuzu kullanın veya ilçe seçin. Yalnızca ${PET_HOTEL_RADIUS_KM} km içindeki tesisler listelenir.`}
+              />
+            ) : filtered.length === 0 ? (
+              <ListingsEmpty
+                title={
+                  isPetHotels
+                    ? `${PET_HOTEL_RADIUS_KM} km içinde otel bulunamadı`
+                    : `${category.name} kategorisinde ilan yok`
+                }
+                hint={
+                  isPetHotels
+                    ? "Farklı bir ilçe seçin veya konumunuzu güncelleyin."
+                    : "Filtreleri değiştirin veya ilk ilanı siz verin."
+                }
+              />
+            ) : (
+              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                {filtered.map((l) => (
+                  <ListingCard
+                    key={l.id}
+                    listing={l}
+                    distanceKm={"distanceKm" in l ? (l.distanceKm as number) : undefined}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

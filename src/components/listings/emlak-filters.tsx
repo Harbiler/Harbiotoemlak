@@ -110,73 +110,82 @@ export function EmlakFilters({
         </p>
       </div>
 
-      <FieldSelect
-        label="Satılık / Kiralık"
-        value={d.ilanTipi ?? HEPSI}
-        onChange={(v) => onChange(setDetail(value, "ilanTipi", v))}
-        options={["Satılık", "Kiralık", "Devren"]}
-      />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <FieldSelect
+          label="Satılık / Kiralık"
+          value={d.ilanTipi ?? HEPSI}
+          onChange={(v) => onChange(setDetail(value, "ilanTipi", v))}
+          options={["Satılık", "Kiralık", "Devren"]}
+        />
 
-      <FieldSelect
-        label="Konut tipi"
-        value={d.emlakTipi ?? HEPSI}
-        onChange={(v) => onChange(setDetail(value, "emlakTipi", v))}
-        options={["Daire", "Villa", "Müstakil Ev", "Rezidans", "Yazlık", "İşyeri", "Arsa", "Köşk"]}
-      />
+        <FieldSelect
+          label="Konut tipi"
+          value={d.emlakTipi ?? HEPSI}
+          onChange={(v) => onChange(setDetail(value, "emlakTipi", v))}
+          options={["Daire", "Villa", "Müstakil Ev", "Rezidans", "Yazlık", "İşyeri", "Arsa", "Köşk"]}
+        />
 
-      <div>
-        <Label className="text-sm">İl</Label>
-        <Select
-          value={city}
-          onValueChange={(next) =>
-            onChange({ ...value, city: next ?? HEPSI, district: HEPSI })
-          }
-          items={cityItems}
-        >
-          <SelectTrigger className="mt-1.5 w-full bg-white">
-            <SelectValue placeholder="Tüm iller" />
-          </SelectTrigger>
-          <SelectContent className="z-[200]">
-            <SelectItem value={HEPSI}>Tüm iller</SelectItem>
-            {CITY_NAMES.map((c) => (
-              <SelectItem key={c} value={c}>
-                {c}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div>
+          <Label className="text-sm">İl</Label>
+          <Select
+            value={city}
+            onValueChange={(next) =>
+              onChange({ ...value, city: next ?? HEPSI, district: HEPSI })
+            }
+            items={cityItems}
+          >
+            <SelectTrigger className="mt-1.5 w-full bg-white">
+              <SelectValue placeholder="Tüm iller" />
+            </SelectTrigger>
+            <SelectContent className="z-[200]">
+              <SelectItem value={HEPSI}>Tüm iller</SelectItem>
+              {CITY_NAMES.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label className="text-sm">İlçe</Label>
+          <Select
+            value={district}
+            onValueChange={(next) => onChange({ ...value, district: next ?? HEPSI })}
+            disabled={city === HEPSI}
+            items={districtItems}
+          >
+            <SelectTrigger className="mt-1.5 w-full bg-white">
+              <SelectValue placeholder={city === HEPSI ? "Önce il seçin" : "Tüm ilçeler"} />
+            </SelectTrigger>
+            <SelectContent className="z-[200]">
+              <SelectItem value={HEPSI}>Tüm ilçeler</SelectItem>
+              {districts.map((x) => (
+                <SelectItem key={x} value={x}>
+                  {x}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <FieldSelect
+          label="Oda sayısı"
+          value={d.odaSayisi ?? HEPSI}
+          onChange={(v) => onChange(setDetail(value, "odaSayisi", v))}
+          options={["1+0", "1+1", "2+1", "3+1", "4+1", "5+1", "6+"]}
+        />
+
+        <FieldSelect
+          label="Bina yaşı"
+          value={d.binaYasi ?? HEPSI}
+          onChange={(v) => onChange(setDetail(value, "binaYasi", v))}
+          options={["0 (Sıfır)", "1-5", "6-10", "11-15", "16-20", "21-25", "26-30", "31+"]}
+        />
       </div>
 
-      <div>
-        <Label className="text-sm">İlçe</Label>
-        <Select
-          value={district}
-          onValueChange={(next) => onChange({ ...value, district: next ?? HEPSI })}
-          disabled={city === HEPSI}
-          items={districtItems}
-        >
-          <SelectTrigger className="mt-1.5 w-full bg-white">
-            <SelectValue placeholder={city === HEPSI ? "Önce il seçin" : "Tüm ilçeler"} />
-          </SelectTrigger>
-          <SelectContent className="z-[200]">
-            <SelectItem value={HEPSI}>Tüm ilçeler</SelectItem>
-            {districts.map((x) => (
-              <SelectItem key={x} value={x}>
-                {x}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <FieldSelect
-        label="Oda sayısı"
-        value={d.odaSayisi ?? HEPSI}
-        onChange={(v) => onChange(setDetail(value, "odaSayisi", v))}
-        options={["1+0", "1+1", "2+1", "3+1", "4+1", "5+1", "6+"]}
-      />
-
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div>
           <Label htmlFor="minFiyat" className="text-sm">
             En az fiyat (₺)
@@ -205,9 +214,6 @@ export function EmlakFilters({
             className="mt-1.5"
           />
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2">
         <div>
           <Label htmlFor="minM2" className="text-sm">
             En az m²
@@ -238,14 +244,7 @@ export function EmlakFilters({
         </div>
       </div>
 
-      <FieldSelect
-        label="Bina yaşı"
-        value={d.binaYasi ?? HEPSI}
-        onChange={(v) => onChange(setDetail(value, "binaYasi", v))}
-        options={["0 (Sıfır)", "1-5", "6-10", "11-15", "16-20", "21-25", "26-30", "31+"]}
-      />
-
-      <div>
+      <div className="max-w-sm">
         <Label className="text-sm">Sıralama</Label>
         <Select
           value={value.sort || "newest"}
@@ -274,7 +273,7 @@ export function EmlakFilters({
       </Button>
 
       {gelismis && (
-        <div className="space-y-4 border-t border-[color-mix(in_oklab,var(--ink)_8%,transparent)] pt-4">
+        <div className="grid grid-cols-2 gap-3 border-t border-[color-mix(in_oklab,var(--ink)_8%,transparent)] pt-4 lg:grid-cols-4">
           <FieldSelect
             label="Bulunduğu kat"
             value={d.bulunduguKat ?? HEPSI}
@@ -419,9 +418,11 @@ export function EmlakFilters({
         </div>
       )}
 
-      <Button type="button" variant="outline" className="w-full" onClick={onReset}>
-        Filtreleri temizle
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" variant="outline" onClick={onReset}>
+          Filtreleri temizle
+        </Button>
+      </div>
     </div>
   );
 }

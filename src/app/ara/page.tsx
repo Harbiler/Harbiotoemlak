@@ -79,7 +79,7 @@ function SearchInner() {
     }
 
     return applyFilters(base, filters);
-  }, [approved, category, filters, isPetHotels, location.coords]);
+  }, [approved, categoryValue, filters, isPetHotels, location.coords]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
@@ -92,9 +92,9 @@ function SearchInner() {
         </p>
       </div>
 
-      <div className="mt-10 grid gap-8 lg:grid-cols-[260px_1fr]">
-        <aside className="space-y-4">
-          <div className="hb-surface space-y-2 p-4">
+      {categoryValue === "emlak" ? (
+        <div className="mt-10 space-y-8">
+          <div className="hb-surface max-w-xs space-y-2 p-4">
             <Label>Kategori</Label>
             <Select
               value={categoryValue}
@@ -114,75 +114,131 @@ function SearchInner() {
               </SelectContent>
             </Select>
           </div>
-          {isPetHotels && (
-            <PetHotelLocationBar
-              location={location}
-              matchCount={
-                location.coords
-                  ? filterListingsWithinKm(
-                      approved.filter((l) => l.category === "evcil-hayvan-otelleri"),
-                      location.coords,
-                      PET_HOTEL_RADIUS_KM,
-                    ).length
-                  : undefined
-              }
-            />
-          )}
           <ListingFilters
             value={filters}
             onChange={setFilters}
             onReset={() => setFilters({ ...DEFAULT_FILTERS, details: {}, q: filters.q })}
-            categorySlug={isHepsi(categoryValue) ? undefined : categoryValue}
+            categorySlug="emlak"
           />
-        </aside>
-
-        <div>
-          <p className="mb-4 text-sm text-[var(--muted-foreground)]">
-            {!ready
-              ? "Yükleniyor…"
-              : isPetHotels && !location.coords
-                ? "Konum bekleniyor"
-                : `${filtered.length} ilan bulundu`}
-            {filters.q ? (
-              <>
-                {" "}
-                · “<span className="text-[var(--ink)]">{filters.q}</span>”
-              </>
-            ) : null}
-          </p>
-          {!ready ? (
-            <ListingsLoading />
-          ) : isPetHotels && !location.coords ? (
-            <ListingsEmpty
-              title="Konumunuzu paylaşın"
-              hint={`Pet oteller yalnızca konumunuza ${PET_HOTEL_RADIUS_KM} km mesafede listelenir.`}
-            />
-          ) : filtered.length === 0 ? (
-            <ListingsEmpty
-              title={
-                isPetHotels
-                  ? `${PET_HOTEL_RADIUS_KM} km içinde otel yok`
-                  : "Aramanıza uygun ilan yok"
-              }
-              hint={
-                isPetHotels
-                  ? "Farklı bir ilçe seçin veya konumunuzu güncelleyin."
-                  : "Farklı anahtar kelime veya daha geniş filtreler deneyin."
-              }
-            />
-          ) : (
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-              {filtered.map((l) => (
-                <ListingCard
-                  key={l.id}
-                  listing={l}
-                  distanceKm={"distanceKm" in l ? (l.distanceKm as number) : undefined}
-                />
-              ))}
-            </div>
-          )}
+          <div>
+            <p className="mb-4 text-sm text-[var(--muted-foreground)]">
+              {!ready ? "Yükleniyor…" : `${filtered.length} ilan bulundu`}
+              {filters.q ? (
+                <>
+                  {" "}
+                  · “<span className="text-[var(--ink)]">{filters.q}</span>”
+                </>
+              ) : null}
+            </p>
+            {!ready ? (
+              <ListingsLoading />
+            ) : filtered.length === 0 ? (
+              <ListingsEmpty
+                title="Aramanıza uygun ilan yok"
+                hint="Farklı anahtar kelime veya daha geniş filtreler deneyin."
+              />
+            ) : (
+              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                {filtered.map((l) => (
+                  <ListingCard key={l.id} listing={l} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="mt-10 grid gap-8 lg:grid-cols-[260px_1fr]">
+          <aside className="space-y-4">
+            <div className="hb-surface space-y-2 p-4">
+              <Label>Kategori</Label>
+              <Select
+                value={categoryValue}
+                onValueChange={(v) => onCategoryChange(v ?? HEPSI)}
+                items={categoryItems}
+              >
+                <SelectTrigger className="w-full bg-white">
+                  <SelectValue placeholder="Tüm kategoriler" />
+                </SelectTrigger>
+                <SelectContent className="z-[200]">
+                  <SelectItem value={HEPSI}>Tüm kategoriler</SelectItem>
+                  {CATEGORIES.map((c) => (
+                    <SelectItem key={c.slug} value={c.slug}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {isPetHotels && (
+              <PetHotelLocationBar
+                location={location}
+                matchCount={
+                  location.coords
+                    ? filterListingsWithinKm(
+                        approved.filter((l) => l.category === "evcil-hayvan-otelleri"),
+                        location.coords,
+                        PET_HOTEL_RADIUS_KM,
+                      ).length
+                    : undefined
+                }
+              />
+            )}
+            <ListingFilters
+              value={filters}
+              onChange={setFilters}
+              onReset={() => setFilters({ ...DEFAULT_FILTERS, details: {}, q: filters.q })}
+              categorySlug={isHepsi(categoryValue) ? undefined : categoryValue}
+            />
+          </aside>
+
+          <div>
+            <p className="mb-4 text-sm text-[var(--muted-foreground)]">
+              {!ready
+                ? "Yükleniyor…"
+                : isPetHotels && !location.coords
+                  ? "Konum bekleniyor"
+                  : `${filtered.length} ilan bulundu`}
+              {filters.q ? (
+                <>
+                  {" "}
+                  · “<span className="text-[var(--ink)]">{filters.q}</span>”
+                </>
+              ) : null}
+            </p>
+            {!ready ? (
+              <ListingsLoading />
+            ) : isPetHotels && !location.coords ? (
+              <ListingsEmpty
+                title="Konumunuzu paylaşın"
+                hint={`Pet oteller yalnızca konumunuza ${PET_HOTEL_RADIUS_KM} km mesafede listelenir.`}
+              />
+            ) : filtered.length === 0 ? (
+              <ListingsEmpty
+                title={
+                  isPetHotels
+                    ? `${PET_HOTEL_RADIUS_KM} km içinde otel yok`
+                    : "Aramanıza uygun ilan yok"
+                }
+                hint={
+                  isPetHotels
+                    ? "Farklı bir ilçe seçin veya konumunuzu güncelleyin."
+                    : "Farklı anahtar kelime veya daha geniş filtreler deneyin."
+                }
+              />
+            ) : (
+              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                {filtered.map((l) => (
+                  <ListingCard
+                    key={l.id}
+                    listing={l}
+                    distanceKm={"distanceKm" in l ? (l.distanceKm as number) : undefined}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
