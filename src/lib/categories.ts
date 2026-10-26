@@ -508,10 +508,26 @@ export const HIDDEN_NAV_CATEGORY_SLUGS = new Set([
   "ozel-ders",
 ]);
 
+/**
+ * Homepage / nav order.
+ * Evcil Hayvan Otelleri sits left of İş Makineleri; Bakıcı Arayanlar sits right of Evcil Hayvan Otelleri.
+ */
+export const NAV_CATEGORY_ORDER: CategorySlug[] = [
+  "emlak",
+  "vasita",
+  "yedek-parca",
+  "evcil-hayvan-otelleri",
+  "bakici-arayanlar",
+  "is-makineleri",
+  "ustalar",
+  "yardimci-arayanlar",
+  "is-ilanlari",
+];
+
 /** Categories shown on homepage, header, footer, and listing category pickers. */
-export const NAV_CATEGORIES: CategoryDef[] = CATEGORIES.filter(
-  (c) => !HIDDEN_NAV_CATEGORY_SLUGS.has(c.slug),
-);
+export const NAV_CATEGORIES: CategoryDef[] = NAV_CATEGORY_ORDER.map(
+  (slug) => CATEGORIES.find((c) => c.slug === slug)!,
+).filter(Boolean);
 
 export function getCategory(slug: string): CategoryDef | undefined {
   return CATEGORIES.find((c) => c.slug === slug);
