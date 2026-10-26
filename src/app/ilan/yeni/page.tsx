@@ -26,6 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { BrandModelFields } from "@/components/listings/brand-model-fields";
+import { supportsBrandModelSearch } from "@/lib/brand-models";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 
 type Step = "kategori" | "form" | "onizleme" | "yayin";
@@ -330,8 +332,35 @@ function NewListingWizard() {
           {(category.fields.length > 0) && (
             <div className="hb-surface space-y-4 p-5">
               <h2 className="font-semibold text-[var(--ink)]">{category.name} alanları</h2>
+              {supportsBrandModelSearch(category.slug) && (
+                <BrandModelFields
+                  category={category.slug}
+                  marka={draft.fields.marka ?? ""}
+                  model={draft.fields.model ?? ""}
+                  onMarkaChange={(v) =>
+                    setDraft({
+                      ...draft,
+                      fields: { ...draft.fields, marka: v, model: "" },
+                    })
+                  }
+                  onModelChange={(v) =>
+                    setDraft({
+                      ...draft,
+                      fields: { ...draft.fields, model: v },
+                    })
+                  }
+                  markaLabel={category.slug === "yedek-parca" ? "Uyumlu Marka" : "Marka"}
+                  modelLabel={category.slug === "yedek-parca" ? "Uyumlu Model" : "Model"}
+                  required
+                />
+              )}
               <div className="grid gap-4 sm:grid-cols-2">
-                {category.fields.map((field) => (
+                {category.fields
+                  .filter((field) => {
+                    if (!supportsBrandModelSearch(category.slug)) return true;
+                    return field.key !== "marka" && field.key !== "model";
+                  })
+                  .map((field) => (
                   <div key={field.key}>
                     <Label>
                       {field.label}

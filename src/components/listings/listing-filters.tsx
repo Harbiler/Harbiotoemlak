@@ -1,6 +1,14 @@
 "use client";
 
 import { CITY_NAMES, CITIES } from "@/lib/cities";
+import { getCategory } from "@/lib/categories";
+import {
+  brandNames,
+  modelsForBrand,
+  supportsBrandModelSearch,
+  supportsDetailedSearch,
+} from "@/lib/brand-models";
+import type { CategorySlug, Listing } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -20,6 +28,8 @@ export interface FilterState {
   minPrice: string;
   maxPrice: string;
   sort: string;
+  /** Category-specific detail filters (marka, model, emlakTipi, …) */
+  details: Record<string, string>;
 }
 
 export const DEFAULT_FILTERS: FilterState = {
@@ -30,21 +40,72 @@ export const DEFAULT_FILTERS: FilterState = {
   minPrice: "",
   maxPrice: "",
   sort: "newest",
+  details: {},
 };
+
+function setDetail(value: FilterState, key: string, next: string): FilterState {
+  const details = { ...value.details };
+  if (!next || next === "all") delete details[key];
+  else details[key] = next;
+  return { ...value, details };
+}
 
 export function ListingFilters({
   value,
   onChange,
   onReset,
+  categorySlug,
 }: {
   value: FilterState;
   onChange: (next: FilterState) => void;
   onReset: () => void;
+  categorySlug?: string;
 }) {
   const districts = value.city !== "all" ? CITIES[value.city] ?? [] : [];
+  const category = categorySlug ? getCategory(categorySlug) : undefined;
+  const showDetailed = categorySlug ? supportsDetailedSearch(categorySlug) : false;
+  const showBrandModel = categorySlug ? supportsBrandModelSearch(categorySlug) : false;
+  const brands = categorySlug ? brandNames(categorySlug) : [];
+  const models = categorySlug
+    ? modelsForBrand(categorySlug, value.details.marka ?? "")
+    : [];
+
+  const emlakFields =
+    categorySlug === "emlak"
+      ? (category?.fields.filter((f) => f.type === "select") ?? [])
+      : [];
+
+  const extraSelectFields =
+    category && showDetailed && !showBrandModel && categorySlug !== "emlak"
+      ? []
+      : category && showDetailed && categorySlug === "yedek-parca"
+        ? category.fields.filter(
+            (f) => f.type === "select" && f.key !== "marka" && f.key !== "model",
+          )
+        : category && showBrandModel
+          ? category.fields.filter(
+              (f) =>
+                f.type === "select" &&
+                f.key !== "marka" &&
+                f.key !== "model",
+            )
+          : [];
 
   return (
     <div className="hb-surface space-y-4 p-4">
+      {showDetailed && (
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--lagoon)]">
+            Detaylı arama
+          </p>
+          <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+            {showBrandModel
+              ? "Tüm marka ve modellere göre daraltın."
+              : "Emlak tipine ve özelliklere göre daraltın."}
+          </p>
+        </div>
+      )}
+
       <div>
         <Label htmlFor="q">Ara</Label>
         <Input
@@ -55,6 +116,154 @@ export function ListingFilters({
           className="mt-1.5"
         />
       </div>
+
+      {showBrandModel && (
+        <>
+          <div>
+            <Label>{categorySlug === "yedek-parca" ? "Uyumlu Marka" : "Marka"}</Label>
+            <Select
+              value={value.details.marka ?? "all"}
+              onValueChange={(marka) => {
+                const next = setDetail(value, "marka", marka ?? "all");
+                onChange(setDetail(next, "model", "all"));
+              }}
+            >
+              <SelectTrigger className="mt-1.5 w-full bg-white">
+                <SelectValue placeholder="Tüm markalar" />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value="all">Tüm markalar</SelectItem>
+                {brands.map((b) => (
+                  <SelectItem key={b} value={b}>
+                    {b}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>{categorySlug === "yedek-parca" ? "Uyumlu Model" : "Model"}</Label>
+            <Select
+              value={value.details.model ?? "all"}
+              onValueChange={(model) => onChange(setDetail(value, "model", model ?? "all"))}
+              disabled={!value.details.marka}
+            >
+              <SelectTrigger className="mt-1.5 w-full bg-white">
+                <SelectValue
+                  placeholder={value.details.marka ? "Tüm modeller" : "Önce marka seçin"}
+                />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value="all">Tüm modeller</SelectItem>
+                {models.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {m}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </>
+      )}
+
+      {emlakFields.map((field) => (
+        <div key={field.key}>
+          <Label>{field.label}</Label>
+          <Select
+            value={value.details[field.key] ?? "all"}
+            onValueChange={(v) => onChange(setDetail(value, field.key, v ?? "all"))}
+          >
+            <SelectTrigger className="mt-1.5 w-full bg-white">
+              <SelectValue placeholder={`Tüm ${field.label.toLowerCase()}`} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tümü</SelectItem>
+              {(field.options ?? []).map((o) => (
+                <SelectItem key={o} value={o}>
+                  {o}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ))}
+
+      {extraSelectFields.map((field) => (
+        <div key={field.key}>
+          <Label>{field.label}</Label>
+          <Select
+            value={value.details[field.key] ?? "all"}
+            onValueChange={(v) => onChange(setDetail(value, field.key, v ?? "all"))}
+          >
+            <SelectTrigger className="mt-1.5 w-full bg-white">
+              <SelectValue placeholder="Tümü" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tümü</SelectItem>
+              {(field.options ?? []).map((o) => (
+                <SelectItem key={o} value={o}>
+                  {o}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ))}
+
+      {categorySlug === "emlak" && (
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label htmlFor="minM2">Min m²</Label>
+            <Input
+              id="minM2"
+              type="number"
+              inputMode="numeric"
+              value={value.details.minMetrekare ?? ""}
+              onChange={(e) => onChange(setDetail(value, "minMetrekare", e.target.value))}
+              className="mt-1.5"
+            />
+          </div>
+          <div>
+            <Label htmlFor="maxM2">Max m²</Label>
+            <Input
+              id="maxM2"
+              type="number"
+              inputMode="numeric"
+              value={value.details.maxMetrekare ?? ""}
+              onChange={(e) => onChange(setDetail(value, "maxMetrekare", e.target.value))}
+              className="mt-1.5"
+            />
+          </div>
+        </div>
+      )}
+
+      {(categorySlug === "vasita" || categorySlug === "motorsiklet") && (
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label htmlFor="minYil">Min yıl</Label>
+            <Input
+              id="minYil"
+              type="number"
+              inputMode="numeric"
+              value={value.details.minYil ?? ""}
+              onChange={(e) => onChange(setDetail(value, "minYil", e.target.value))}
+              className="mt-1.5"
+            />
+          </div>
+          <div>
+            <Label htmlFor="maxYil">Max yıl</Label>
+            <Input
+              id="maxYil"
+              type="number"
+              inputMode="numeric"
+              value={value.details.maxYil ?? ""}
+              onChange={(e) => onChange(setDetail(value, "maxYil", e.target.value))}
+              className="mt-1.5"
+            />
+          </div>
+        </div>
+      )}
+
       <div>
         <Label>İl</Label>
         <Select
@@ -154,34 +363,65 @@ export function ListingFilters({
           </SelectContent>
         </Select>
       </div>
-      <Button type="button" variant="outline" className="w-full" onClick={onReset}>
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={() => onReset()}
+      >
         Filtreleri temizle
       </Button>
     </div>
   );
 }
 
-export function applyFilters<T extends {
-  title: string;
-  description: string;
-  city: string;
-  district: string;
-  sellerType: string;
-  price: number;
-  createdAt: string;
-}>(items: T[], f: FilterState): T[] {
+export function applyFilters<
+  T extends {
+    title: string;
+    description: string;
+    city: string;
+    district: string;
+    sellerType: string;
+    price: number;
+    createdAt: string;
+    fields?: Listing["fields"];
+    category?: CategorySlug | string;
+  },
+>(items: T[], f: FilterState): T[] {
   let result = items.filter((l) => {
     if (f.q) {
       const q = f.q.toLowerCase();
-      if (!l.title.toLowerCase().includes(q) && !l.description.toLowerCase().includes(q)) {
-        return false;
-      }
+      const hay = `${l.title} ${l.description} ${Object.values(l.fields ?? {}).join(" ")}`.toLowerCase();
+      if (!hay.includes(q)) return false;
     }
     if (f.city !== "all" && l.city !== f.city) return false;
     if (f.district !== "all" && l.district !== f.district) return false;
     if (f.sellerType !== "all" && l.sellerType !== f.sellerType) return false;
     if (f.minPrice && l.price < Number(f.minPrice)) return false;
     if (f.maxPrice && l.price > Number(f.maxPrice) && l.price > 0) return false;
+
+    const fields = l.fields ?? {};
+    for (const [key, raw] of Object.entries(f.details)) {
+      if (!raw || raw === "all") continue;
+      if (key === "minMetrekare") {
+        if (Number(fields.metrekare ?? 0) < Number(raw)) return false;
+        continue;
+      }
+      if (key === "maxMetrekare") {
+        if (Number(fields.metrekare ?? 0) > Number(raw)) return false;
+        continue;
+      }
+      if (key === "minYil") {
+        if (Number(fields.yil ?? 0) < Number(raw)) return false;
+        continue;
+      }
+      if (key === "maxYil") {
+        if (Number(fields.yil ?? 0) > Number(raw)) return false;
+        continue;
+      }
+      const actual = fields[key];
+      if (actual === undefined || String(actual) !== raw) return false;
+    }
     return true;
   });
 

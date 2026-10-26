@@ -129,7 +129,8 @@ export const CATEGORIES: CategoryDef[] = [
         options: ["Motor", "Fren", "Süspansiyon", "Lastik", "Aksesuar", "Elektrik", "Kaporta"],
         required: true,
       },
-      { key: "uyumluMarka", label: "Uyumlu Marka/Model", type: "text", required: true },
+      { key: "marka", label: "Uyumlu Marka", type: "text", required: true },
+      { key: "model", label: "Uyumlu Model", type: "text", required: true },
       {
         key: "durum",
         label: "Durum",

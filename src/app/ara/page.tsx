@@ -33,6 +33,7 @@ function SearchInner() {
   const location = useCustomerLocation();
   const [filters, setFilters] = useState<FilterState>(() => ({
     ...DEFAULT_FILTERS,
+    details: {},
     q: searchParams.get("q") ?? "",
   }));
   const [category, setCategory] = useState(searchParams.get("kategori") ?? "all");
@@ -44,6 +45,11 @@ function SearchInner() {
     const k = searchParams.get("kategori");
     if (k) setCategory(k);
   }, [searchParams]);
+
+  function onCategoryChange(next: string) {
+    setCategory(next ?? "all");
+    setFilters((f) => ({ ...f, details: {} }));
+  }
 
   const approved = useMemo(
     () => listings.filter((l) => l.status === "approved"),
@@ -79,7 +85,7 @@ function SearchInner() {
         <aside className="space-y-4">
           <div className="hb-surface space-y-2 p-4">
             <Label>Kategori</Label>
-            <Select value={category} onValueChange={(v) => setCategory(v ?? "all")}>
+            <Select value={category} onValueChange={(v) => onCategoryChange(v ?? "all")}>
               <SelectTrigger className="w-full bg-white">
                 <SelectValue placeholder="Tüm kategoriler" />
               </SelectTrigger>
@@ -110,7 +116,8 @@ function SearchInner() {
           <ListingFilters
             value={filters}
             onChange={setFilters}
-            onReset={() => setFilters(DEFAULT_FILTERS)}
+            onReset={() => setFilters({ ...DEFAULT_FILTERS, details: {}, q: filters.q })}
+            categorySlug={category === "all" ? undefined : category}
           />
         </aside>
 

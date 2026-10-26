@@ -31,7 +31,7 @@ export default function CategoryPage({
   const { slug } = use(params);
   const category = getCategory(slug);
   const { getByCategory, ready } = useListings();
-  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS, details: {} });
   const location = useCustomerLocation();
   const isPetHotels = category?.slug === "evcil-hayvan-otelleri";
 
@@ -130,7 +130,8 @@ export default function CategoryPage({
           <ListingFilters
             value={filters}
             onChange={setFilters}
-            onReset={() => setFilters(DEFAULT_FILTERS)}
+            onReset={() => setFilters({ ...DEFAULT_FILTERS, details: {} })}
+            categorySlug={category.slug}
           />
         </aside>
         <div>

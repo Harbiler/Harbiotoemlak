@@ -19,6 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { BrandModelFields } from "@/components/listings/brand-model-fields";
+import { supportsBrandModelSearch } from "@/lib/brand-models";
 
 interface FormState {
   category: CategorySlug;
@@ -334,8 +336,25 @@ export function ListingForm({
           <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold text-[var(--ink)]">
             {category?.name} detayları
           </h2>
+          {supportsBrandModelSearch(form.category) && (
+            <BrandModelFields
+              category={form.category}
+              marka={form.fields.marka ?? ""}
+              model={form.fields.model ?? ""}
+              onMarkaChange={(v) => setField("marka", v)}
+              onModelChange={(v) => setField("model", v)}
+              markaLabel={form.category === "yedek-parca" ? "Uyumlu Marka" : "Marka"}
+              modelLabel={form.category === "yedek-parca" ? "Uyumlu Model" : "Model"}
+              required
+            />
+          )}
           <div className="grid gap-4 sm:grid-cols-2">
-            {categoryFields.map((field) => (
+            {categoryFields
+              .filter((field) => {
+                if (!supportsBrandModelSearch(form.category)) return true;
+                return field.key !== "marka" && field.key !== "model";
+              })
+              .map((field) => (
               <div key={field.key} className={field.type === "textarea" ? "sm:col-span-2" : ""}>
                 <Label>
                   {field.label}
