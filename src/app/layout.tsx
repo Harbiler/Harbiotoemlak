@@ -3,6 +3,7 @@ import { Figtree, Outfit } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { BrandModelScript } from "@/components/listings/brand-model-script";
 import { CityDistrictScript } from "@/components/listings/city-district-script";
 import "./globals.css";
 
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="tr" className={`${figtree.variable} ${outfit.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col text-[var(--ink)]">
         <CityDistrictScript />
+        <BrandModelScript />
         <Providers>
           <SiteHeader />
           <main className="flex-1">{children}</main>

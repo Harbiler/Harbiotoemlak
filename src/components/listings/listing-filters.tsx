@@ -2,13 +2,12 @@
 
 import { getCategory } from "@/lib/categories";
 import {
-  brandNames,
-  modelsForBrand,
   supportsBrandModelSearch,
   supportsDetailedSearch,
 } from "@/lib/brand-models";
 import { HEPSI, isHepsi } from "@/lib/filter-all";
 import type { CategorySlug, Listing } from "@/lib/types";
+import { BrandModelFilterFields } from "@/components/listings/brand-model-filter-fields";
 import { CityDistrictFields } from "@/components/listings/city-district-fields";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -97,11 +96,6 @@ export function ListingFilters({
   const category = categorySlug ? getCategory(categorySlug) : undefined;
   const showDetailed = categorySlug ? supportsDetailedSearch(categorySlug) : false;
   const showBrandModel = categorySlug ? supportsBrandModelSearch(categorySlug) : false;
-  const brands = categorySlug ? brandNames(categorySlug) : [];
-  const models = categorySlug
-    ? modelsForBrand(categorySlug, value.details.marka ?? "")
-    : [];
-
   const isEmlak = categorySlug === "emlak";
 
   const extraSelectFields =
@@ -145,27 +139,30 @@ export function ListingFilters({
         />
       </div>
 
-      {showBrandModel && (
-        <>
-          <FieldSelect
-            label={categorySlug === "yedek-parca" ? "Uyumlu Marka" : "Marka"}
-            value={value.details.marka ?? HEPSI}
-            allLabel="Tüm markalar"
-            options={brands}
-            onChange={(marka) => {
-              const next = setDetail(value, "marka", marka);
-              onChange(setDetail(next, "model", HEPSI));
-            }}
-          />
-          <FieldSelect
-            label={categorySlug === "yedek-parca" ? "Uyumlu Model" : "Model"}
-            value={value.details.model ?? HEPSI}
-            allLabel={value.details.marka ? "Tüm modeller" : "Önce marka seçin"}
-            options={models}
-            disabled={!value.details.marka}
-            onChange={(model) => onChange(setDetail(value, "model", model))}
-          />
-        </>
+      {showBrandModel && categorySlug && (
+        <BrandModelFilterFields
+          category={categorySlug}
+          marka={value.details.marka ?? HEPSI}
+          model={value.details.model ?? HEPSI}
+          markaLabel={
+            categorySlug === "yedek-parca" ? "Uyumlu Marka" : "Marka"
+          }
+          modelLabel={
+            categorySlug === "yedek-parca" ? "Uyumlu Model" : "Model"
+          }
+          onMarkaChange={(marka) => {
+            const next = setDetail(value, "marka", marka);
+            onChange(setDetail(next, "model", HEPSI));
+          }}
+          onModelChange={(model, selectedMarka) => {
+            const withMarka = setDetail(
+              value,
+              "marka",
+              selectedMarka || value.details.marka || HEPSI,
+            );
+            onChange(setDetail(withMarka, "model", model));
+          }}
+        />
       )}
 
       {extraSelectFields.map((field) => (
