@@ -19,6 +19,7 @@ import {
 } from "@/components/listings/listing-states";
 import { PetHotelLocationBar } from "@/components/listings/pet-hotel-location-bar";
 import { useCustomerLocation } from "@/hooks/use-customer-location";
+import { supportsDetailedSearch } from "@/lib/brand-models";
 import { filterListingsWithinKm, PET_HOTEL_RADIUS_KM } from "@/lib/geo";
 import { Button } from "@/components/ui/button";
 import { Hotel, Plus } from "lucide-react";
@@ -119,7 +120,7 @@ export default function CategoryPage({
         </div>
       </div>
 
-      {category.slug === "emlak" ? (
+      {supportsDetailedSearch(category.slug) && !isPetHotels ? (
         <div className="mx-auto max-w-6xl space-y-8 px-4 py-10 sm:px-6">
           <ListingFilters
             value={filters}

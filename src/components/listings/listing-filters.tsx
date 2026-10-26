@@ -139,67 +139,87 @@ export function ListingFilters({
         />
       </div>
 
-      {showBrandModel && categorySlug && (
-        <BrandModelFilterFields
-          category={categorySlug}
-          marka={value.details.marka ?? HEPSI}
-          model={value.details.model ?? HEPSI}
-          markaLabel={
-            categorySlug === "yedek-parca" ? "Uyumlu Marka" : "Marka"
-          }
-          modelLabel={
-            categorySlug === "yedek-parca" ? "Uyumlu Model" : "Model"
-          }
-          onMarkaChange={(marka) => {
-            const next = setDetail(value, "marka", marka);
-            onChange(setDetail(next, "model", HEPSI));
-          }}
-          onModelChange={(model, selectedMarka) => {
-            const withMarka = setDetail(
-              value,
-              "marka",
-              selectedMarka || value.details.marka || HEPSI,
-            );
-            onChange(setDetail(withMarka, "model", model));
-          }}
-        />
-      )}
+      {showBrandModel && categorySlug ? (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <BrandModelFilterFields
+            category={categorySlug}
+            marka={value.details.marka ?? HEPSI}
+            model={value.details.model ?? HEPSI}
+            markaLabel={
+              categorySlug === "yedek-parca" ? "Uyumlu Marka" : "Marka"
+            }
+            modelLabel={
+              categorySlug === "yedek-parca" ? "Uyumlu Model" : "Model"
+            }
+            onMarkaChange={(marka) => {
+              const next = setDetail(value, "marka", marka);
+              onChange(setDetail(next, "model", HEPSI));
+            }}
+            onModelChange={(model, selectedMarka) => {
+              const withMarka = setDetail(
+                value,
+                "marka",
+                selectedMarka || value.details.marka || HEPSI,
+              );
+              onChange(setDetail(withMarka, "model", model));
+            }}
+          />
 
-      {extraSelectFields.map((field) => (
-        <FieldSelect
-          key={field.key}
-          label={field.label}
-          value={value.details[field.key] ?? HEPSI}
-          options={field.options ?? []}
-          onChange={(v) => onChange(setDetail(value, field.key, v))}
-        />
-      ))}
+          {extraSelectFields.map((field) => (
+            <FieldSelect
+              key={field.key}
+              label={field.label}
+              value={value.details[field.key] ?? HEPSI}
+              options={field.options ?? []}
+              onChange={(v) => onChange(setDetail(value, field.key, v))}
+            />
+          ))}
 
-      {(categorySlug === "vasita" || categorySlug === "motorsiklet") && (
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <Label htmlFor="minYil">En az yıl</Label>
-            <Input
-              id="minYil"
-              type="number"
-              inputMode="numeric"
-              value={value.details.minYil ?? ""}
-              onChange={(e) => onChange(setDetail(value, "minYil", e.target.value))}
-              className="mt-1.5"
-            />
-          </div>
-          <div>
-            <Label htmlFor="maxYil">En fazla yıl</Label>
-            <Input
-              id="maxYil"
-              type="number"
-              inputMode="numeric"
-              value={value.details.maxYil ?? ""}
-              onChange={(e) => onChange(setDetail(value, "maxYil", e.target.value))}
-              className="mt-1.5"
-            />
-          </div>
+          {(categorySlug === "vasita" || categorySlug === "motorsiklet") && (
+            <>
+              <div>
+                <Label htmlFor="minYil" className="text-sm">
+                  En az yıl
+                </Label>
+                <Input
+                  id="minYil"
+                  type="number"
+                  inputMode="numeric"
+                  value={value.details.minYil ?? ""}
+                  onChange={(e) =>
+                    onChange(setDetail(value, "minYil", e.target.value))
+                  }
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="maxYil" className="text-sm">
+                  En fazla yıl
+                </Label>
+                <Input
+                  id="maxYil"
+                  type="number"
+                  inputMode="numeric"
+                  value={value.details.maxYil ?? ""}
+                  onChange={(e) =>
+                    onChange(setDetail(value, "maxYil", e.target.value))
+                  }
+                  className="mt-1.5"
+                />
+              </div>
+            </>
+          )}
         </div>
+      ) : (
+        extraSelectFields.map((field) => (
+          <FieldSelect
+            key={field.key}
+            label={field.label}
+            value={value.details[field.key] ?? HEPSI}
+            options={field.options ?? []}
+            onChange={(v) => onChange(setDetail(value, field.key, v))}
+          />
+        ))
       )}
 
       <CityDistrictFields
