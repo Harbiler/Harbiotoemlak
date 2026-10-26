@@ -119,13 +119,7 @@ export default function CategoryPage({
         </div>
       </div>
 
-      <div
-        className={
-          category.slug === "emlak"
-            ? "mx-auto grid max-w-6xl gap-6 px-4 py-10 lg:grid-cols-[180px_1fr] sm:px-6"
-            : "mx-auto grid max-w-6xl gap-8 px-4 py-10 lg:grid-cols-[260px_1fr] sm:px-6"
-        }
-      >
+      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 lg:grid-cols-[260px_1fr] sm:px-6">
         <aside className="space-y-4">
           {isPetHotels && (
             <PetHotelLocationBar
