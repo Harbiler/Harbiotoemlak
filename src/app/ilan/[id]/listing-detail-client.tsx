@@ -17,6 +17,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
+  getPetHotelAvailability,
+  isPetHotelListing,
+  PET_HOTEL_AVAILABILITY,
+} from "@/lib/pet-hotel-availability";
+import { cn } from "@/lib/utils";
+import {
   Heart,
   MapPin,
   Phone,
@@ -28,7 +34,7 @@ import {
 
 export function ListingDetailClient({ id }: { id: string }) {
   const searchParams = useSearchParams();
-  const { getById, listings, ready } = useListings();
+  const { getById, listings, ready, updateListing } = useListings();
   const { user } = useAuth();
   const { isFavorite, toggleFavorite, addRecent } = useUserPrefs();
   const [showPhone, setShowPhone] = useState(false);
@@ -71,6 +77,18 @@ export function ListingDetailClient({ id }: { id: string }) {
   const photos = listing.photos.length > 0 ? listing.photos : [`${listing.category}-1`];
   const fav = isFavorite(listing.id);
   const ilanNo = listingNumber(listing.id);
+  const petAvailability = isPetHotelListing(listing)
+    ? getPetHotelAvailability(listing)
+    : null;
+  const canToggleAvailability = Boolean(canEdit && petAvailability);
+
+  function setAvailability(next: string) {
+    const current = getById(id);
+    if (!current) return;
+    updateListing(current.id, {
+      fields: { ...current.fields, musaitlik: next },
+    });
+  }
 
   async function share() {
     const url = typeof window !== "undefined" ? window.location.href : "";
@@ -184,6 +202,18 @@ export function ListingDetailClient({ id }: { id: string }) {
               <p className="hb-display text-2xl font-bold text-[var(--ink)]">
                 {formatPrice(listing.price)}
               </p>
+              {petAvailability && (
+                <Badge
+                  className={cn(
+                    "text-white",
+                    petAvailability === PET_HOTEL_AVAILABILITY.musait
+                      ? "bg-emerald-600 hover:bg-emerald-600"
+                      : "bg-stone-600 hover:bg-stone-600",
+                  )}
+                >
+                  {petAvailability}
+                </Badge>
+              )}
               <Badge variant="secondary" className="gap-1">
                 <MapPin className="size-3" />
                 {listing.city} / {listing.district}
@@ -193,6 +223,38 @@ export function ListingDetailClient({ id }: { id: string }) {
             </div>
             {copied && (
               <p className="mt-2 text-xs text-[var(--lagoon)]">Bağlantı panoya kopyalandı.</p>
+            )}
+
+            {canToggleAvailability && (
+              <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-[color-mix(in_oklab,var(--ink)_10%,transparent)] bg-white/80 p-3">
+                <p className="mr-auto text-sm font-medium text-[var(--ink)]">
+                  Müsaitlik durumunu güncelle
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className={cn(
+                    petAvailability === PET_HOTEL_AVAILABILITY.musait &&
+                      "border-emerald-600 bg-emerald-50 text-emerald-800",
+                  )}
+                  onClick={() => setAvailability(PET_HOTEL_AVAILABILITY.musait)}
+                >
+                  Müsait
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className={cn(
+                    petAvailability === PET_HOTEL_AVAILABILITY.dolu &&
+                      "border-stone-600 bg-stone-100 text-stone-800",
+                  )}
+                  onClick={() => setAvailability(PET_HOTEL_AVAILABILITY.dolu)}
+                >
+                  Dolu
+                </Button>
+              </div>
             )}
 
             <p className="mt-6 whitespace-pre-wrap text-base leading-relaxed text-[var(--ink)]/85">

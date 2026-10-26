@@ -365,6 +365,13 @@ export const CATEGORIES: CategoryDef[] = [
         options: ["Köpek", "Kedi", "Köpek & Kedi", "Tüm Evcil"],
         required: true,
       },
+      {
+        key: "musaitlik",
+        label: "Müsaitlik",
+        type: "select",
+        options: ["Müsait", "Dolu"],
+        required: true,
+      },
       { key: "kapasite", label: "Kapasite", type: "number" },
       { key: "gunlukUcret", label: "Günlük Ücret (bilgi)", type: "number" },
       {

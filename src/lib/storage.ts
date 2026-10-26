@@ -6,7 +6,7 @@ const LISTINGS_KEY = "harbidenbak.listings";
 const SESSION_KEY = "harbidenbak.session";
 const PET_HOTEL_APPS_KEY = "harbidenbak.petHotelApplications";
 const VERSION_KEY = "harbidenbak.seedVersion";
-const SEED_VERSION = "10";
+const SEED_VERSION = "11";
 
 function canUseStorage(): boolean {
   return typeof window !== "undefined" && !!window.localStorage;

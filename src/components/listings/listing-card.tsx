@@ -6,6 +6,11 @@ import { SellerBadge } from "./seller-badge";
 import { getSellerBadge } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { formatDistanceKm } from "@/lib/geo";
+import {
+  getPetHotelAvailability,
+  isPetHotelListing,
+  PET_HOTEL_AVAILABILITY,
+} from "@/lib/pet-hotel-availability";
 import { MapPin } from "lucide-react";
 
 export function ListingCard({
@@ -17,6 +22,9 @@ export function ListingCard({
 }) {
   const badge = getSellerBadge(listing);
   const isCorporate = badge !== "bireysel";
+  const petAvailability = isPetHotelListing(listing)
+    ? getPetHotelAvailability(listing)
+    : null;
 
   return (
     <Link
@@ -38,6 +46,18 @@ export function ListingCard({
         {listing.featured && (
           <span className="absolute bottom-2 left-2 rounded-md bg-[var(--lagoon)]/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
             Öne çıkan
+          </span>
+        )}
+        {petAvailability && (
+          <span
+            className={cn(
+              "absolute left-2 top-2 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white shadow-sm",
+              petAvailability === PET_HOTEL_AVAILABILITY.musait
+                ? "bg-emerald-600/95"
+                : "bg-stone-600/95",
+            )}
+          >
+            {petAvailability}
           </span>
         )}
         {typeof distanceKm === "number" && (

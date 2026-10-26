@@ -803,6 +803,7 @@ export const SEED_LISTINGS: Listing[] = [
     updatedAt: daysAgo(5),
     fields: {
       tesisAdi: "Pati Köşkü",
+      musaitlik: "Müsait",
       kabul: "Köpek & Kedi",
       kapasite: 24,
       gunlukUcret: 850,
@@ -829,6 +830,7 @@ export const SEED_LISTINGS: Listing[] = [
     updatedAt: daysAgo(11),
     fields: {
       tesisAdi: "Mırmır House",
+      musaitlik: "Müsait",
       kabul: "Kedi",
       kapasite: 12,
       gunlukUcret: 650,
@@ -856,6 +858,7 @@ export const SEED_LISTINGS: Listing[] = [
     updatedAt: daysAgo(2),
     fields: {
       tesisAdi: "Moda Pati Hotel",
+      musaitlik: "Müsait",
       kabul: "Köpek & Kedi",
       kapasite: 18,
       gunlukUcret: 900,
@@ -882,6 +885,7 @@ export const SEED_LISTINGS: Listing[] = [
     updatedAt: daysAgo(4),
     fields: {
       tesisAdi: "Happy Paws",
+      musaitlik: "Müsait",
       kabul: "Köpek",
       kapasite: 14,
       gunlukUcret: 780,
@@ -908,6 +912,7 @@ export const SEED_LISTINGS: Listing[] = [
     updatedAt: daysAgo(6),
     fields: {
       tesisAdi: "Pet Nest",
+      musaitlik: "Dolu",
       kabul: "Köpek & Kedi",
       kapasite: 20,
       gunlukUcret: 820,
@@ -933,6 +938,7 @@ export const SEED_LISTINGS: Listing[] = [
     updatedAt: daysAgo(8),
     fields: {
       tesisAdi: "Coast Pet Hotel",
+      musaitlik: "Müsait",
       kabul: "Tüm Evcil",
       kapasite: 30,
       gunlukUcret: 700,
