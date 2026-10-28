@@ -1,14 +1,22 @@
 # www.harbidenbak.com yayını
 
-Bu ortamda Vercel hesabı bağlı değil; alan adı DNS’i de buradan yönetilemiyor.
+Bu ortamda Vercel hesabı bağlı değil; alan adı DNS’i Cloudflare’de ve buradan yönetilemiyor.
 Aşağıdaki adımlarla siteyi **www.harbidenbak.com** üzerinde kalıcı yayınlayın.
+
+## Durum (28 Eki 2026, Europe/Istanbul)
+
+| Hedef | Durum |
+|-------|--------|
+| Geçici Vercel URL | Canlı (~60 dk) |
+| `www.harbidenbak.com` | **Çalışmıyor** — DNS Cloudflare proxy (A: `104.21.64.195`, `172.67.154.218`); HTTPS **403** `cf-mitigated: challenge`. Vercel A/CNAME değil. |
+| Domain attach | Engelli — `vercel whoami` → Logged out; `VERCEL_TOKEN` yok |
 
 ## 1) Geçici yayını sahiplen
 
-Canlı önizleme (yaklaşık 60 dk geçerli):
+Canlı önizleme (yaklaşık 60 dk geçerli; **Europe/Istanbul 23:50 civarı** doluyor):
 
-- Site: https://prompt-beryl-61np7gz.tmp.now
-- Sahiplen: https://vercel.com/claim-deployment?code=d6f577b8-8c1b-42cd-8256-8613c690c038
+- Site: https://express-perseus-zy3zdnl.tmp.now
+- Sahiplen: https://vercel.com/claim-deployment?code=12492454-e84b-4c47-9b0f-fd7d67887783
 
 Claim sayfasında Vercel’e giriş yapıp deployment’ı hesabınıza alın.
 
@@ -19,7 +27,10 @@ Vercel dashboard → Project → **Settings → Domains**:
 1. `www.harbidenbak.com` ekleyin
 2. `harbidenbak.com` ekleyin (www’ye yönlendirme önerilir)
 
-## 3) DNS (alan adı sağlayıcınız)
+## 3) DNS (Cloudflare → Vercel)
+
+NS şu an Cloudflare (`anuj.ns.cloudflare.com`, `donna.ns.cloudflare.com`).
+Cloudflare DNS’te proxy’yi kapatın (DNS only / gri bulut) veya kayıtları Vercel’e çevirin:
 
 | Tip | Ad  | Değer                          |
 |-----|-----|--------------------------------|
@@ -33,6 +44,7 @@ Veya Vercel’in Domain ekranında gösterdiği kayıtları birebir kullanın.
 ```bash
 cd harbiden-bak
 npx vercel login
+# veya: export VERCEL_TOKEN=...
 npx vercel --prod
 ```
 
