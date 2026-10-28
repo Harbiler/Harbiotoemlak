@@ -43,3 +43,9 @@ Admin: `/giris?admin=1` veya `/admin`
 ## Tech
 
 Next.js 16 · TypeScript · Tailwind v4 · shadcn/ui
+
+## Repo / yayın
+
+- GitHub: https://github.com/Harbiler/Harbidenbak.com
+- Domain: https://www.harbidenbak.com (Vercel önerilir)
+- GitHub Pages notları: [GITHUB_PAGES.md](./GITHUB_PAGES.md) · CNAME: `public/CNAME`
