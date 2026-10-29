@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
-import type { KurumsalType, MembershipKind } from "@/lib/types";
+import { isValidTcKimlikNo, type KurumsalType, type MembershipKind } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,8 @@ export default function RegisterPage() {
   const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [tcKimlikNo, setTcKimlikNo] = useState("");
+  const [address, setAddress] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -30,11 +33,22 @@ export default function RegisterPage() {
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const tc = tcKimlikNo.trim();
+    if (!isValidTcKimlikNo(tc)) {
+      setError("T.C. Kimlik No 11 haneli olmalıdır.");
+      return;
+    }
+    if (!address.trim()) {
+      setError("Adres zorunludur.");
+      return;
+    }
     const result = register({
       email,
       password,
       name,
       phone,
+      tcKimlikNo: tc,
+      address: address.trim(),
       membershipKind,
       kurumsalType: membershipKind === "kurumsal" ? kurumsalType : undefined,
       companyName: membershipKind === "kurumsal" ? companyName : undefined,
@@ -140,6 +154,34 @@ export default function RegisterPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
+          />
+        </div>
+        <div>
+          <Label htmlFor="tc">T.C. Kimlik No</Label>
+          <Input
+            id="tc"
+            className="mt-1.5"
+            value={tcKimlikNo}
+            onChange={(e) => setTcKimlikNo(e.target.value.replace(/\D/g, "").slice(0, 11))}
+            required
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={11}
+            minLength={11}
+            pattern="\d{11}"
+            placeholder="11 haneli kimlik numarası"
+          />
+        </div>
+        <div>
+          <Label htmlFor="address">Adres</Label>
+          <Textarea
+            id="address"
+            className="mt-1.5"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            required
+            rows={3}
+            placeholder="Açık adres (il, ilçe, mahalle, sokak, no)"
           />
         </div>
         <div>

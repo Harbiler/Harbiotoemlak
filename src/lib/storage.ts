@@ -15,8 +15,8 @@ const REMEMBERED_EMAIL_KEY = "harbidenbak.rememberedEmail";
 const PET_HOTEL_APPS_KEY = "harbidenbak.petHotelApplications";
 const CAREGIVER_APPS_KEY = "harbidenbak.caregiverApplications";
 const VERSION_KEY = "harbidenbak.seedVersion";
-/** Bumped for free 1-year listing validity (validUntil). */
-const SEED_VERSION = "14";
+/** Bumped for Bakıcı vatandaşlık + kimlik/pasaport alanları. */
+const SEED_VERSION = "15";
 
 function ensureListingValidity(listing: Listing): Listing {
   if (listing.validUntil) return listing;

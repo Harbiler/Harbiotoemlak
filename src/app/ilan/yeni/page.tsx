@@ -28,11 +28,18 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { BrandModelFields } from "@/components/listings/brand-model-fields";
+import { IdentityDocsFields } from "@/components/listings/identity-docs-fields";
 import { supportsBrandModelSearch } from "@/lib/brand-models";
 import {
   getVasitaSubcategory,
   VASITA_SUBCATEGORIES,
 } from "@/lib/vasita-subcategories";
+import {
+  hasRequiredIdentityDocs,
+  IDENTITY_DOCS_ERROR,
+  readFileAsAppFile,
+} from "@/lib/application-file";
+import type { ListingIdentityDocs } from "@/lib/types";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 
 type Step = "kategori" | "form" | "onizleme" | "yayin";
@@ -66,6 +73,9 @@ function NewListingWizard() {
 
   const [step, setStep] = useState<Step>("kategori");
   const [error, setError] = useState<string | null>(null);
+  const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
+  const [idBackFile, setIdBackFile] = useState<File | null>(null);
+  const [passportFile, setPassportFile] = useState<File | null>(null);
   const [draft, setDraft] = useState<Draft>(() => ({
     category:
       preset && getCategory(preset) ? (preset as CategorySlug) : "",
@@ -135,10 +145,21 @@ function NewListingWizard() {
     for (const f of fields) {
       if (f.required && !draft.fields[f.key]?.trim()) return `${f.label} zorunludur.`;
     }
+    if (draft.category === "bakici-arayanlar") {
+      if (
+        !hasRequiredIdentityDocs({
+          idFront: idFrontFile,
+          idBack: idBackFile,
+          passport: passportFile,
+        })
+      ) {
+        return IDENTITY_DOCS_ERROR;
+      }
+    }
     return null;
   }
 
-  function publish() {
+  async function publish() {
     if (!user || !draft.category) return;
     const err = validateForm();
     if (err) {
@@ -147,38 +168,62 @@ function NewListingWizard() {
       return;
     }
     setError(null);
-    const parsedFields: Record<string, string | number | boolean> = {};
-    for (const field of category?.fields ?? []) {
-      const raw = draft.fields[field.key];
-      if (raw === undefined || raw === "") continue;
-      parsedFields[field.key] = field.type === "number" ? Number(raw) : raw;
+    try {
+      const parsedFields: Record<string, string | number | boolean> = {};
+      for (const field of category?.fields ?? []) {
+        const raw = draft.fields[field.key];
+        if (raw === undefined || raw === "") continue;
+        parsedFields[field.key] = field.type === "number" ? Number(raw) : raw;
+      }
+      if (draft.category === "vasita" && draft.fields.altKategori) {
+        parsedFields.altKategori = draft.fields.altKategori;
+      }
+
+      let identityDocs: ListingIdentityDocs | undefined;
+      if (draft.category === "bakici-arayanlar") {
+        const [idFront, idBack, passport] = await Promise.all([
+          idFrontFile ? readFileAsAppFile(idFrontFile) : Promise.resolve(undefined),
+          idBackFile ? readFileAsAppFile(idBackFile) : Promise.resolve(undefined),
+          passportFile
+            ? readFileAsAppFile(passportFile)
+            : Promise.resolve(undefined),
+        ]);
+        identityDocs = {};
+        if (idFront) identityDocs.idFront = idFront;
+        if (idBack) identityDocs.idBack = idBack;
+        if (passport) identityDocs.passport = passport;
+      }
+
+      const status: ListingStatus = "approved";
+      const publishedAt = new Date().toISOString();
+      const created = createListing({
+        category: draft.category,
+        title: draft.title.trim(),
+        description: draft.description.trim(),
+        price: draft.price ? Number(draft.price) : 0,
+        city: draft.city,
+        district: draft.district,
+        photos: [`${draft.category}-new`, `${draft.category}-new-2`],
+        contactName: draft.contactName.trim(),
+        contactPhone: draft.contactPhone.trim(),
+        sellerType: user.membershipKind,
+        sellerKurumsalType: user.kurumsalType,
+        sellerId: user.id,
+        status,
+        validUntil: freeListingValidUntil(publishedAt),
+        fields: parsedFields,
+        ...(identityDocs ? { identityDocs } : {}),
+      });
+      setStep("yayin");
+      setTimeout(() => {
+        router.push(`/ilan/${created.id}`);
+      }, 900);
+    } catch (publishErr) {
+      setError(
+        publishErr instanceof Error ? publishErr.message : "İlan yayınlanamadı.",
+      );
+      setStep("form");
     }
-    if (draft.category === "vasita" && draft.fields.altKategori) {
-      parsedFields.altKategori = draft.fields.altKategori;
-    }
-    const status: ListingStatus = "approved";
-    const publishedAt = new Date().toISOString();
-    const created = createListing({
-      category: draft.category,
-      title: draft.title.trim(),
-      description: draft.description.trim(),
-      price: draft.price ? Number(draft.price) : 0,
-      city: draft.city,
-      district: draft.district,
-      photos: [`${draft.category}-new`, `${draft.category}-new-2`],
-      contactName: draft.contactName.trim(),
-      contactPhone: draft.contactPhone.trim(),
-      sellerType: user.membershipKind,
-      sellerKurumsalType: user.kurumsalType,
-      sellerId: user.id,
-      status,
-      validUntil: freeListingValidUntil(publishedAt),
-      fields: parsedFields,
-    });
-    setStep("yayin");
-    setTimeout(() => {
-      router.push(`/ilan/${created.id}`);
-    }, 900);
   }
 
   if (!ready || !user) {
@@ -236,6 +281,9 @@ function NewListingWizard() {
                 type="button"
                 onClick={() => {
                   setDraft((d) => ({ ...d, category: c.slug, fields: {} }));
+                  setIdFrontFile(null);
+                  setIdBackFile(null);
+                  setPassportFile(null);
                   setStep("form");
                   setError(null);
                 }}
@@ -468,6 +516,17 @@ function NewListingWizard() {
                   </div>
                 ))}
               </div>
+              {draft.category === "bakici-arayanlar" && (
+                <IdentityDocsFields
+                  idPrefix="ilan-yeni"
+                  idFront={idFrontFile}
+                  idBack={idBackFile}
+                  passport={passportFile}
+                  onIdFront={setIdFrontFile}
+                  onIdBack={setIdBackFile}
+                  onPassport={setPassportFile}
+                />
+              )}
             </div>
           )}
 

@@ -6,12 +6,23 @@ import { NAV_CATEGORIES, getCategory, type CategoryField } from "@/lib/categorie
 import { CITY_NAMES, CITIES } from "@/lib/cities";
 import { useAuth } from "@/context/auth-context";
 import { useListings } from "@/context/listings-context";
-import type { CategorySlug, Listing, ListingStatus, MembershipKind } from "@/lib/types";
+import type {
+  CategorySlug,
+  Listing,
+  ListingIdentityDocs,
+  ListingStatus,
+  MembershipKind,
+} from "@/lib/types";
 import { formatDateShort } from "@/lib/format";
 import {
   freeListingCopy,
   freeListingValidUntil,
 } from "@/lib/listing-validity";
+import {
+  hasRequiredIdentityDocs,
+  IDENTITY_DOCS_ERROR,
+  readFileAsAppFile,
+} from "@/lib/application-file";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +36,7 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { BrandModelFields } from "@/components/listings/brand-model-fields";
+import { IdentityDocsFields } from "@/components/listings/identity-docs-fields";
 import { supportsBrandModelSearch } from "@/lib/brand-models";
 import {
   getVasitaSubcategory,
@@ -144,9 +156,13 @@ export function ListingForm({
   );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
+  const [idBackFile, setIdBackFile] = useState<File | null>(null);
+  const [passportFile, setPassportFile] = useState<File | null>(null);
 
   const category = getCategory(form.category);
   const districts = CITIES[form.city] ?? [];
+  const needsIdentityDocs = form.category === "bakici-arayanlar";
 
   const categoryFields = useMemo(() => category?.fields ?? [], [category]);
 
@@ -171,10 +187,42 @@ export function ListingForm({
         return `${field.label} alanı zorunludur.`;
       }
     }
+    if (needsIdentityDocs) {
+      const existing = listing?.identityDocs;
+      const ok = hasRequiredIdentityDocs({
+        idFront: idFrontFile ?? existing?.idFront,
+        idBack: idBackFile ?? existing?.idBack,
+        passport: passportFile ?? existing?.passport,
+      });
+      if (!ok) return IDENTITY_DOCS_ERROR;
+    }
     return null;
   }
 
-  function onSubmit(e: React.FormEvent) {
+  async function resolveIdentityDocs(): Promise<
+    ListingIdentityDocs | undefined
+  > {
+    if (!needsIdentityDocs) return undefined;
+    const existing = listing?.identityDocs;
+    const [idFront, idBack, passport] = await Promise.all([
+      idFrontFile
+        ? readFileAsAppFile(idFrontFile)
+        : Promise.resolve(existing?.idFront),
+      idBackFile
+        ? readFileAsAppFile(idBackFile)
+        : Promise.resolve(existing?.idBack),
+      passportFile
+        ? readFileAsAppFile(passportFile)
+        : Promise.resolve(existing?.passport),
+    ]);
+    const docs: ListingIdentityDocs = {};
+    if (idFront) docs.idFront = idFront;
+    if (idBack) docs.idBack = idBack;
+    if (passport) docs.passport = passport;
+    return docs;
+  }
+
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) {
       router.push("/giris?next=/ilan/yeni");
@@ -188,61 +236,72 @@ export function ListingForm({
     setSaving(true);
     setError(null);
 
-    const parsedFields: Record<string, string | number | boolean> = {};
-    for (const field of categoryFields) {
-      const raw = form.fields[field.key];
-      if (raw === undefined || raw === "") continue;
-      parsedFields[field.key] = field.type === "number" ? Number(raw) : raw;
-    }
-    if (form.category === "vasita" && form.fields.altKategori) {
-      parsedFields.altKategori = form.fields.altKategori;
-    }
+    try {
+      const parsedFields: Record<string, string | number | boolean> = {};
+      for (const field of categoryFields) {
+        const raw = form.fields[field.key];
+        if (raw === undefined || raw === "") continue;
+        parsedFields[field.key] = field.type === "number" ? Number(raw) : raw;
+      }
+      if (form.category === "vasita" && form.fields.altKategori) {
+        parsedFields.altKategori = form.fields.altKategori;
+      }
 
-    const sellerType: MembershipKind = user.membershipKind;
-    const status: ListingStatus = adminMode
-      ? form.status
-      : listing
-        ? listing.status
-        : "approved";
+      const sellerType: MembershipKind = user.membershipKind;
+      const status: ListingStatus = adminMode
+        ? form.status
+        : listing
+          ? listing.status
+          : "approved";
 
-    const nextStatus: ListingStatus = adminMode
-      ? status
-      : listing
-        ? listing.status
-        : "approved";
-    const nowIso = new Date().toISOString();
-    const validUntil =
-      !listing
-        ? freeListingValidUntil(nowIso)
-        : nextStatus === "approved" && listing.status !== "approved"
+      const nextStatus: ListingStatus = adminMode
+        ? status
+        : listing
+          ? listing.status
+          : "approved";
+      const nowIso = new Date().toISOString();
+      const validUntil =
+        !listing
           ? freeListingValidUntil(nowIso)
-          : listing.validUntil || freeListingValidUntil(listing.createdAt);
+          : nextStatus === "approved" && listing.status !== "approved"
+            ? freeListingValidUntil(nowIso)
+            : listing.validUntil || freeListingValidUntil(listing.createdAt);
 
-    const payload = {
-      category: form.category,
-      title: form.title.trim(),
-      description: form.description.trim(),
-      price: form.price ? Number(form.price) : 0,
-      city: form.city,
-      district: form.district,
-      photos: listing?.photos ?? [`${form.category}-new`],
-      contactName: form.contactName.trim(),
-      contactPhone: form.contactPhone.trim(),
-      sellerType,
-      sellerKurumsalType: listing?.sellerKurumsalType ?? user.kurumsalType,
-      sellerId: listing?.sellerId ?? user.id,
-      status: nextStatus,
-      featured: listing?.featured,
-      validUntil,
-      fields: parsedFields,
-    };
+      const identityDocs = await resolveIdentityDocs();
 
-    if (listing) {
-      updateListing(listing.id, payload);
-      router.push(adminMode ? "/admin" : `/ilan/${listing.id}`);
-    } else {
-      const created = createListing(payload);
-      router.push(`/ilan/${created.id}`);
+      const payload = {
+        category: form.category,
+        title: form.title.trim(),
+        description: form.description.trim(),
+        price: form.price ? Number(form.price) : 0,
+        city: form.city,
+        district: form.district,
+        photos: listing?.photos ?? [`${form.category}-new`],
+        contactName: form.contactName.trim(),
+        contactPhone: form.contactPhone.trim(),
+        sellerType,
+        sellerKurumsalType: listing?.sellerKurumsalType ?? user.kurumsalType,
+        sellerId: listing?.sellerId ?? user.id,
+        status: nextStatus,
+        featured: listing?.featured,
+        validUntil,
+        fields: parsedFields,
+        ...(identityDocs ? { identityDocs } : {}),
+      };
+
+      if (listing) {
+        updateListing(listing.id, payload);
+        router.push(adminMode ? "/admin" : `/ilan/${listing.id}`);
+      } else {
+        const created = createListing(payload);
+        router.push(`/ilan/${created.id}`);
+      }
+    } catch (submitErr) {
+      setError(
+        submitErr instanceof Error ? submitErr.message : "İlan kaydedilemedi.",
+      );
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -262,13 +321,19 @@ export function ListingForm({
           <Label>Kategori</Label>
           <Select
             value={form.category}
-            onValueChange={(v) =>
+            onValueChange={(v) => {
+              const next = (v as CategorySlug) ?? form.category;
               setForm((f) => ({
                 ...f,
-                category: (v as CategorySlug) ?? f.category,
+                category: next,
                 fields: {},
-              }))
-            }
+              }));
+              if (next !== "bakici-arayanlar") {
+                setIdFrontFile(null);
+                setIdBackFile(null);
+                setPassportFile(null);
+              }
+            }}
             disabled={!!listing && !adminMode}
             items={Object.fromEntries(NAV_CATEGORIES.map((c) => [c.slug, c.name]))}
           >
@@ -441,6 +506,22 @@ export function ListingForm({
               </div>
             ))}
           </div>
+          {needsIdentityDocs && (
+            <IdentityDocsFields
+              idPrefix="listing-form"
+              idFront={idFrontFile}
+              idBack={idBackFile}
+              passport={passportFile}
+              existing={{
+                idFrontName: listing?.identityDocs?.idFront?.name,
+                idBackName: listing?.identityDocs?.idBack?.name,
+                passportName: listing?.identityDocs?.passport?.name,
+              }}
+              onIdFront={setIdFrontFile}
+              onIdBack={setIdBackFile}
+              onPassport={setPassportFile}
+            />
+          )}
         </div>
       )}
 

@@ -564,9 +564,41 @@ export default function AdminPage() {
                     <TableCell className="text-sm">
                       <p>{app.email}</p>
                       <p className="text-xs text-stone-500">{app.phone}</p>
+                      {app.vatandaslik && (
+                        <p className="mt-1 text-xs text-stone-600">
+                          Vatandaşlık: {app.vatandaslik}
+                        </p>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm">
                       <div className="flex flex-col gap-1">
+                        {app.idFront && (
+                          <a
+                            href={app.idFront.dataUrl}
+                            download={app.idFront.name}
+                            className="text-[var(--lagoon)] hover:underline"
+                          >
+                            Kimlik ön: {app.idFront.name}
+                          </a>
+                        )}
+                        {app.idBack && (
+                          <a
+                            href={app.idBack.dataUrl}
+                            download={app.idBack.name}
+                            className="text-[var(--lagoon)] hover:underline"
+                          >
+                            Kimlik arka: {app.idBack.name}
+                          </a>
+                        )}
+                        {app.passport && (
+                          <a
+                            href={app.passport.dataUrl}
+                            download={app.passport.name}
+                            className="text-[var(--lagoon)] hover:underline"
+                          >
+                            Pasaport: {app.passport.name}
+                          </a>
+                        )}
                         <a
                           href={app.residenceDocument.dataUrl}
                           download={app.residenceDocument.name}

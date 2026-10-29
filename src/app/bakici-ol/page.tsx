@@ -2,46 +2,20 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { addCaregiverApplication } from "@/lib/storage";
-import type { ApplicationFile } from "@/lib/types";
+import { IdentityDocsFields } from "@/components/listings/identity-docs-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  DOC_ACCEPTED,
+  PHOTO_ACCEPTED,
+  hasRequiredIdentityDocs,
+  IDENTITY_DOCS_ERROR,
+  readFileAsAppFile,
+} from "@/lib/application-file";
+import { addCaregiverApplication } from "@/lib/storage";
 import { ArrowLeft, HeartHandshake, Upload } from "lucide-react";
-
-const MAX_FILE_BYTES = 2.5 * 1024 * 1024;
-const DOC_ACCEPTED = "image/jpeg,image/png,image/webp,application/pdf";
-const PHOTO_ACCEPTED = "image/jpeg,image/png,image/webp";
-
-async function readFileAsAppFile(
-  file: File,
-  opts?: { imagesOnly?: boolean },
-): Promise<ApplicationFile> {
-  if (file.size > MAX_FILE_BYTES) {
-    throw new Error(`"${file.name}" 2.5 MB sınırını aşıyor.`);
-  }
-  const allowed = (opts?.imagesOnly ? PHOTO_ACCEPTED : DOC_ACCEPTED).split(",");
-  if (!allowed.includes(file.type)) {
-    throw new Error(
-      opts?.imagesOnly
-        ? `"${file.name}" için JPEG, PNG veya WEBP yükleyin.`
-        : `"${file.name}" için JPEG, PNG, WEBP veya PDF yükleyin.`,
-    );
-  }
-  const dataUrl = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("Dosya okunamadı."));
-    reader.readAsDataURL(file);
-  });
-  return {
-    name: file.name,
-    type: file.type,
-    size: file.size,
-    dataUrl,
-  };
-}
 
 function FileUploadField({
   id,
@@ -87,9 +61,13 @@ export default function CaregiverApplyPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [vatandaslik, setVatandaslik] = useState("");
   const [residenceFile, setResidenceFile] = useState<File | null>(null);
   const [criminalFile, setCriminalFile] = useState<File | null>(null);
   const [profileFile, setProfileFile] = useState<File | null>(null);
+  const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
+  const [idBackFile, setIdBackFile] = useState<File | null>(null);
+  const [passportFile, setPassportFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
@@ -102,26 +80,53 @@ export default function CaregiverApplyPage() {
       setError("İsim soyisim, e-posta ve telefon zorunludur.");
       return;
     }
+    if (!vatandaslik.trim()) {
+      setError("Vatandaşlık / ülke zorunludur.");
+      return;
+    }
     if (!residenceFile || !criminalFile || !profileFile) {
       setError("İkametgâh, sabıka kaydı ve profil resmi yüklenmelidir.");
+      return;
+    }
+    if (
+      !hasRequiredIdentityDocs({
+        idFront: idFrontFile,
+        idBack: idBackFile,
+        passport: passportFile,
+      })
+    ) {
+      setError(IDENTITY_DOCS_ERROR);
       return;
     }
 
     setSaving(true);
     try {
-      const [residenceDocument, criminalRecordDocument, profilePhoto] =
-        await Promise.all([
-          readFileAsAppFile(residenceFile),
-          readFileAsAppFile(criminalFile),
-          readFileAsAppFile(profileFile, { imagesOnly: true }),
-        ]);
+      const [
+        residenceDocument,
+        criminalRecordDocument,
+        profilePhoto,
+        idFront,
+        idBack,
+        passport,
+      ] = await Promise.all([
+        readFileAsAppFile(residenceFile),
+        readFileAsAppFile(criminalFile),
+        readFileAsAppFile(profileFile, { imagesOnly: true }),
+        idFrontFile ? readFileAsAppFile(idFrontFile) : Promise.resolve(undefined),
+        idBackFile ? readFileAsAppFile(idBackFile) : Promise.resolve(undefined),
+        passportFile ? readFileAsAppFile(passportFile) : Promise.resolve(undefined),
+      ]);
       addCaregiverApplication({
         fullName: fullName.trim(),
         email: email.trim(),
         phone: phone.trim(),
+        vatandaslik: vatandaslik.trim(),
         residenceDocument,
         criminalRecordDocument,
         profilePhoto,
+        ...(idFront ? { idFront } : {}),
+        ...(idBack ? { idBack } : {}),
+        ...(passport ? { passport } : {}),
       });
       setDone(true);
     } catch (err) {
@@ -176,8 +181,8 @@ export default function CaregiverApplyPage() {
           Bakıcı Olmak İstiyorum
         </h1>
         <p className="mt-2 text-[var(--muted-foreground)]">
-          İkametgâh, sabıka kaydı ve profil fotoğrafınızla başvurun. Başvurular
-          otomatik onaylanır.
+          Vatandaşlık, kimlik veya pasaport, ikametgâh, sabıka kaydı ve profil
+          fotoğrafınızla başvurun. Başvurular otomatik onaylanır.
         </p>
       </div>
 
@@ -225,6 +230,28 @@ export default function CaregiverApplyPage() {
             className="h-10 bg-white"
           />
         </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="vatandaslik">Vatandaşlık / Ülke</Label>
+          <Input
+            id="vatandaslik"
+            value={vatandaslik}
+            onChange={(e) => setVatandaslik(e.target.value)}
+            placeholder="Türkmenistanlı"
+            required
+            className="h-10 bg-white"
+          />
+        </div>
+
+        <IdentityDocsFields
+          idPrefix="bakici"
+          idFront={idFrontFile}
+          idBack={idBackFile}
+          passport={passportFile}
+          onIdFront={setIdFrontFile}
+          onIdBack={setIdBackFile}
+          onPassport={setPassportFile}
+        />
 
         <FileUploadField
           id="residenceDocument"

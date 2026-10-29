@@ -1,14 +1,19 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { useListings } from "@/context/listings-context";
+import { isValidTcKimlikNo } from "@/lib/types";
 import { ListingsLoading } from "@/components/listings/listing-states";
 import { ListingCard } from "@/components/listings/listing-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   getPetHotelAvailability,
   isPetHotelListing,
@@ -17,13 +22,24 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function AccountPage() {
-  const { user, ready, logout } = useAuth();
+  const { user, ready, logout, updateUser } = useAuth();
   const { listings, ready: listingsReady, updateListing } = useListings();
   const router = useRouter();
+
+  const [tcKimlikNo, setTcKimlikNo] = useState("");
+  const [address, setAddress] = useState("");
+  const [profileMsg, setProfileMsg] = useState<string | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   useEffect(() => {
     if (ready && !user) router.replace("/giris?next=/hesabim");
   }, [ready, user, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    setTcKimlikNo(user.tcKimlikNo ?? "");
+    setAddress(user.address ?? "");
+  }, [user]);
 
   if (!ready || !user) {
     return (
@@ -41,6 +57,24 @@ export default function AccountPage() {
     updateListing(listingId, {
       fields: { ...listing.fields, musaitlik: next },
     });
+  }
+
+  function onSaveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user) return;
+    setProfileMsg(null);
+    setProfileError(null);
+    const tc = tcKimlikNo.trim();
+    if (!isValidTcKimlikNo(tc)) {
+      setProfileError("T.C. Kimlik No 11 haneli olmalıdır.");
+      return;
+    }
+    if (!address.trim()) {
+      setProfileError("Adres zorunludur.");
+      return;
+    }
+    updateUser(user.id, { tcKimlikNo: tc, address: address.trim() });
+    setProfileMsg("Profil kaydedildi.");
   }
 
   return (
@@ -87,6 +121,50 @@ export default function AccountPage() {
             <span className="text-stone-500">Firma:</span> {user.companyName}
           </p>
         )}
+
+        <form onSubmit={onSaveProfile} className="mt-5 space-y-4 border-t border-pink-900/10 pt-5">
+          <p className="text-sm font-medium text-stone-800">Üyelik bilgileri</p>
+          {profileError && (
+            <Alert variant="destructive">
+              <AlertDescription>{profileError}</AlertDescription>
+            </Alert>
+          )}
+          {profileMsg && (
+            <Alert>
+              <AlertDescription>{profileMsg}</AlertDescription>
+            </Alert>
+          )}
+          <div>
+            <Label htmlFor="hesabim-tc">T.C. Kimlik No</Label>
+            <Input
+              id="hesabim-tc"
+              className="mt-1.5 max-w-sm"
+              value={tcKimlikNo}
+              onChange={(e) => setTcKimlikNo(e.target.value.replace(/\D/g, "").slice(0, 11))}
+              required
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={11}
+              minLength={11}
+              pattern="\d{11}"
+            />
+          </div>
+          <div>
+            <Label htmlFor="hesabim-address">Adres</Label>
+            <Textarea
+              id="hesabim-address"
+              className="mt-1.5 max-w-xl"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              required
+              rows={3}
+              placeholder="Açık adres (il, ilçe, mahalle, sokak, no)"
+            />
+          </div>
+          <Button type="submit" size="sm" className="bg-[var(--lagoon)] hover:bg-[#be185d]">
+            Kaydet
+          </Button>
+        </form>
       </div>
 
       <h2 className="mt-10 hb-display text-2xl font-bold text-[var(--ink)]">

@@ -17,13 +17,15 @@ import {
   saveSessionUserId,
   saveUsers,
 } from "@/lib/storage";
-import type { KurumsalType, MembershipKind, User } from "@/lib/types";
+import { isValidTcKimlikNo, type KurumsalType, type MembershipKind, type User } from "@/lib/types";
 
 interface RegisterInput {
   email: string;
   password: string;
   name: string;
   phone: string;
+  tcKimlikNo: string;
+  address: string;
   membershipKind: MembershipKind;
   kurumsalType?: KurumsalType;
   companyName?: string;
@@ -91,12 +93,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (input.membershipKind === "kurumsal" && !input.kurumsalType) {
         return { ok: false as const, error: "Kurumsal üyelik tipi seçin (Galeri veya Emlak)." };
       }
+      const tc = input.tcKimlikNo.trim();
+      if (!isValidTcKimlikNo(tc)) {
+        return { ok: false as const, error: "T.C. Kimlik No 11 haneli olmalıdır." };
+      }
+      const address = input.address.trim();
+      if (!address) {
+        return { ok: false as const, error: "Adres zorunludur." };
+      }
       const newUser: User = {
         id: `u-${Date.now()}`,
         email: input.email.trim().toLowerCase(),
         password: input.password,
         name: input.name.trim(),
         phone: input.phone.trim(),
+        tcKimlikNo: tc,
+        address,
         role: "user",
         membershipKind: input.membershipKind,
         kurumsalType: input.membershipKind === "kurumsal" ? input.kurumsalType : undefined,

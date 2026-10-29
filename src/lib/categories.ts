@@ -435,6 +435,13 @@ export const CATEGORIES: CategoryDef[] = [
         options: ["Yatılı", "Gündüzlü", "Saatlik", "Hafta Sonu"],
         required: true,
       },
+      {
+        key: "vatandaslik",
+        label: "Vatandaşlık / Ülke",
+        type: "text",
+        placeholder: "Türkmenistanlı",
+        required: true,
+      },
       { key: "yasAraligi", label: "Yaş Aralığı (bakılan)", type: "text" },
       {
         key: "sertifika",

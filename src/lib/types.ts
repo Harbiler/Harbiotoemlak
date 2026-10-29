@@ -24,11 +24,20 @@ export interface User {
   password: string;
   name: string;
   phone: string;
+  /** T.C. Kimlik No — 11 hane (yeni kayıtlarda zorunlu) */
+  tcKimlikNo?: string;
+  /** Açık adres (yeni kayıtlarda zorunlu) */
+  address?: string;
   role: UserRole;
   membershipKind: MembershipKind;
   kurumsalType?: KurumsalType;
   companyName?: string;
   createdAt: string;
+}
+
+/** T.C. Kimlik No: yalnızca 11 rakam. */
+export function isValidTcKimlikNo(value: string): boolean {
+  return /^\d{11}$/.test(value.trim());
 }
 
 export interface Listing {
@@ -54,6 +63,11 @@ export interface Listing {
   /** Yayın geçerlilik bitişi (ISO). Yeni ilanlar yayın tarihinden itibaren 1 yıl ücretsiz. */
   validUntil: string;
   fields: Record<string, string | number | boolean>;
+  /**
+   * Kimlik ön/arka veya pasaport (localStorage data URL).
+   * Bakıcı Arayanlar ilanlarında zorunlu; genel ilan özelliklerinde gösterilmez.
+   */
+  identityDocs?: ListingIdentityDocs;
 }
 
 export interface AuthSession {
@@ -73,6 +87,13 @@ export interface PetHotelApplicationFile {
 /** Shared uploaded file payload for partner applications. */
 export type ApplicationFile = PetHotelApplicationFile;
 
+/** Kimlik / pasaport yüklemeleri — public özellik listesinde yer almaz. */
+export interface ListingIdentityDocs {
+  idFront?: ApplicationFile;
+  idBack?: ApplicationFile;
+  passport?: ApplicationFile;
+}
+
 export interface PetHotelApplication {
   id: string;
   fullName: string;
@@ -91,9 +112,17 @@ export interface CaregiverApplication {
   fullName: string;
   email: string;
   phone: string;
+  /** Örn. Türkmenistanlı, Türkiyeli */
+  vatandaslik: string;
   residenceDocument: ApplicationFile;
   criminalRecordDocument: ApplicationFile;
   profilePhoto: ApplicationFile;
+  /** Kimlik ön — pasaport yoksa ön+arka zorunlu */
+  idFront?: ApplicationFile;
+  /** Kimlik arka — pasaport yoksa ön+arka zorunlu */
+  idBack?: ApplicationFile;
+  /** Pasaport — kimlik ön+arka yerine yeterli */
+  passport?: ApplicationFile;
   status: CaregiverApplicationStatus;
   createdAt: string;
 }
