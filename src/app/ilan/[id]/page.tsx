@@ -1,7 +1,7 @@
 import { Suspense } from "react";
+import { SEED_LISTINGS } from "@/lib/seed";
 import { ListingDetailClient } from "./listing-detail-client";
 import { ListingsLoading } from "@/components/listings/listing-states";
-import { SEED_LISTINGS } from "@/lib/seed";
 
 export function generateStaticParams() {
   return SEED_LISTINGS.map((listing) => ({ id: listing.id }));

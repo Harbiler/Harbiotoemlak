@@ -8,8 +8,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Shield } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Eye, EyeOff, Shield } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logo";
+import {
+  loadRememberPreference,
+  loadRememberedEmail,
+} from "@/lib/storage";
 
 function LoginInner() {
   const { login, user, ready } = useAuth();
@@ -20,7 +32,17 @@ function LoginInner() {
 
   const [email, setEmail] = useState(adminHint ? "admin@harbidenbak.com" : "");
   const [password, setPassword] = useState(adminHint ? "admin123" : "");
+  const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(true);
+  const [forgotOpen, setForgotOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (adminHint) return;
+    setRemember(loadRememberPreference());
+    const saved = loadRememberedEmail();
+    if (saved) setEmail(saved);
+  }, [adminHint]);
 
   useEffect(() => {
     if (ready && user) {
@@ -31,7 +53,7 @@ function LoginInner() {
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const result = login(email, password);
+    const result = login(email, password, remember);
     if (!result.ok) {
       setError(result.error);
       return;
@@ -96,45 +118,78 @@ function LoginInner() {
             />
           </div>
           <div>
-            <Label htmlFor="password">Şifre</Label>
-            <Input
-              id="password"
-              type="password"
-              className="mt-1.5 bg-white"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="password">Şifre</Label>
+              <button
+                type="button"
+                onClick={() => setForgotOpen(true)}
+                className="text-xs font-medium text-[var(--lagoon)] hover:underline"
+              >
+                Şifremi unuttum
+              </button>
+            </div>
+            <div className="relative mt-1.5">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                className="bg-white pr-11"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-[var(--muted-foreground)] hover:text-[var(--ink)]"
+                aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
+                aria-pressed={showPassword}
+              >
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="mt-2 text-xs font-medium text-[var(--muted-foreground)] hover:text-[var(--lagoon)]"
+            >
+              {showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
+            </button>
           </div>
+          <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[var(--ink)]">
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+              className="size-4 rounded border border-[var(--border)] accent-[var(--lagoon)]"
+            />
+            Beni Hatırla
+          </label>
           <Button type="submit" className="w-full bg-[var(--lagoon)] hover:bg-[#be185d]">
             Giriş Yap
           </Button>
         </form>
 
-        <div className="hb-surface mt-8 p-4 text-sm text-[var(--muted-foreground)]">
-          <p className="font-semibold text-[var(--ink)]">Demo hesaplar</p>
-          <ul className="mt-2 space-y-1 text-xs leading-relaxed">
-            <li>
-              <strong>Admin:</strong> admin@harbidenbak.com / admin123
-            </li>
-            <li>
-              <strong>Bireysel:</strong> ayse@ornek.com / demo123
-            </li>
-            <li>
-              <strong>Galeri:</strong> galeri@ornek.com / demo123
-            </li>
-            <li>
-              <strong>Emlak:</strong> emlak@ornek.com / demo123
-            </li>
-          </ul>
-          <Button asChild variant="link" className="mt-2 h-auto px-0 text-[var(--lagoon)]">
-            <Link href="/giris?admin=1">
-              <Shield className="size-3.5" />
-              Admin Yönetim Paneli
-            </Link>
-          </Button>
-        </div>
+        <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Şifremi unuttum</DialogTitle>
+              <DialogDescription>
+                E-posta ile sıfırlama yakında. Şimdilik hesabınıza erişemiyorsanız destek için
+                site yöneticisiyle iletişime geçin.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                type="button"
+                className="bg-[var(--lagoon)] hover:bg-[#be185d]"
+                onClick={() => setForgotOpen(false)}
+              >
+                Tamam
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

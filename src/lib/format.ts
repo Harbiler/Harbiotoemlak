@@ -15,6 +15,15 @@ export function formatDate(iso: string): string {
   }).format(new Date(iso));
 }
 
+/** Kısa tarih (geçerlilik satırları için). */
+export function formatDateShort(iso: string): string {
+  return new Intl.DateTimeFormat("tr-TR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(iso));
+}
+
 export function formatRelative(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));

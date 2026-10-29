@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { getCategory } from "@/lib/categories";
-import { formatDate, formatPrice } from "@/lib/format";
+import { formatDate, formatDateShort, formatPrice } from "@/lib/format";
+import { freeListingCopy, isListingExpired } from "@/lib/listing-validity";
 import { listingNumber } from "@/lib/types";
 import { useAuth } from "@/context/auth-context";
 import { useListings } from "@/context/listings-context";
@@ -304,6 +305,16 @@ export function ListingDetailClient({ id }: { id: string }) {
             <p className="hb-display mt-1 text-3xl font-bold text-[var(--ink)]">
               {formatPrice(listing.price)}
             </p>
+            <div className="mt-3 rounded-lg bg-[color-mix(in_oklab,var(--mist)_65%,white)] px-3 py-2 text-xs text-[var(--ink)]">
+              <p className="font-semibold text-[var(--lagoon)]">{freeListingCopy.badge}</p>
+              <p className="mt-0.5 text-[var(--muted-foreground)]">
+                {listing.validUntil
+                  ? isListingExpired(listing.validUntil)
+                    ? `Geçerlilik süresi doldu (${formatDateShort(listing.validUntil)})`
+                    : `Geçerli süre: ${formatDateShort(listing.validUntil)} tarihine kadar`
+                  : freeListingCopy.detail}
+              </p>
+            </div>
             <div className="mt-5 border-t border-[color-mix(in_oklab,var(--ink)_8%,transparent)] pt-4">
               <div className="flex items-start justify-between gap-2">
                 <div>

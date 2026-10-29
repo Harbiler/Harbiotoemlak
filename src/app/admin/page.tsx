@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { useListings } from "@/context/listings-context";
 import { getCategory, CATEGORIES } from "@/lib/categories";
-import { formatPrice } from "@/lib/format";
+import { formatDateShort, formatPrice } from "@/lib/format";
+import { freeListingCopy } from "@/lib/listing-validity";
 import {
   approvePendingCaregiverApplications,
   approvePendingPetHotelApplications,
@@ -149,6 +150,9 @@ export default function AdminPage() {
           <p className="mt-1 text-sm text-stone-600">
             İlanları onaylayın, gizleyin, düzenleyin; üyelikleri yönetin.
           </p>
+          <p className="mt-2 max-w-xl text-xs text-stone-500">
+            {freeListingCopy.adminNote}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild className="bg-[var(--lagoon)] hover:bg-[#be185d]">
@@ -264,6 +268,7 @@ export default function AdminPage() {
                     <TableHead>Kategori</TableHead>
                     <TableHead>Fiyat</TableHead>
                     <TableHead>Durum</TableHead>
+                    <TableHead>Geçerlilik</TableHead>
                     <TableHead className="text-right">İşlem</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -297,6 +302,13 @@ export default function AdminPage() {
                         >
                           {statusLabel(l.status)}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs text-stone-600">
+                        <span className="font-medium text-[var(--lagoon)]">Ücretsiz</span>
+                        <br />
+                        {l.validUntil
+                          ? formatDateShort(l.validUntil)
+                          : "—"}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap justify-end gap-1">

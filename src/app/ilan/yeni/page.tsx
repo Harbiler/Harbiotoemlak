@@ -9,6 +9,7 @@ import { NAV_CATEGORIES, getCategory } from "@/lib/categories";
 import { CITY_NAMES, CITIES } from "@/lib/cities";
 import type { CategorySlug, ListingStatus } from "@/lib/types";
 import { formatPrice } from "@/lib/format";
+import { freeListingCopy, freeListingValidUntil } from "@/lib/listing-validity";
 import { CategoryIcon } from "@/components/category-icon";
 import { SellerBadge } from "@/components/listings/seller-badge";
 import { ListingsLoading } from "@/components/listings/listing-states";
@@ -156,6 +157,7 @@ function NewListingWizard() {
       parsedFields.altKategori = draft.fields.altKategori;
     }
     const status: ListingStatus = "approved";
+    const publishedAt = new Date().toISOString();
     const created = createListing({
       category: draft.category,
       title: draft.title.trim(),
@@ -170,6 +172,7 @@ function NewListingWizard() {
       sellerKurumsalType: user.kurumsalType,
       sellerId: user.id,
       status,
+      validUntil: freeListingValidUntil(publishedAt),
       fields: parsedFields,
     });
     setStep("yayin");
@@ -191,6 +194,11 @@ function NewListingWizard() {
       <h1 className="hb-display text-3xl font-bold text-[var(--ink)]">İlan Ver</h1>
       <p className="mt-1 text-[var(--muted-foreground)]">
         Kategori seçin, detayları doldurun, önizleyin ve yayınlayın.
+      </p>
+      <p className="mt-3 rounded-lg border border-[color-mix(in_oklab,var(--lagoon)_25%,transparent)] bg-[color-mix(in_oklab,var(--mist)_70%,white)] px-3 py-2 text-sm text-[var(--ink)]">
+        <span className="font-semibold text-[var(--lagoon)]">{freeListingCopy.badge}</span>
+        {" — "}
+        {freeListingCopy.short} Ücretli paket gerekmez.
       </p>
 
       <ol className="mt-8 flex flex-wrap gap-2">
@@ -548,12 +556,12 @@ function NewListingWizard() {
               className="bg-[var(--lagoon)] hover:bg-[#be185d]"
               onClick={publish}
             >
-              Yayınla
+              Ücretsiz yayınla
               <Check className="size-4" />
             </Button>
           </div>
           <p className="text-xs text-[var(--muted-foreground)]">
-            İlanınız otomatik onaylanır ve hemen yayına alınır.
+            {freeListingCopy.publishHint}
           </p>
         </div>
       )}
@@ -566,7 +574,9 @@ function NewListingWizard() {
           <h2 className="hb-display mt-4 text-2xl font-bold text-[var(--ink)]">
             İlan onaylandı
           </h2>
-          <p className="mt-2 text-[var(--muted-foreground)]">Detay sayfasına yönlendiriliyorsunuz…</p>
+          <p className="mt-2 text-[var(--muted-foreground)]">
+            {freeListingCopy.detail} Detay sayfasına yönlendiriliyorsunuz…
+          </p>
           <Button asChild variant="outline" className="mt-6">
             <Link href="/hesabim">Hesabıma git</Link>
           </Button>

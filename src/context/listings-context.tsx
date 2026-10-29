@@ -9,11 +9,16 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { freeListingValidUntil } from "@/lib/listing-validity";
 import { loadListings, resetDemoData, saveListings } from "@/lib/storage";
 import type { CategorySlug, Listing, ListingStatus, MembershipKind } from "@/lib/types";
 
-export type ListingInput = Omit<Listing, "id" | "createdAt" | "updatedAt" | "currency"> & {
+export type ListingInput = Omit<
+  Listing,
+  "id" | "createdAt" | "updatedAt" | "currency" | "validUntil"
+> & {
   id?: string;
+  validUntil?: string;
 };
 
 interface ListingsContextValue {
@@ -69,6 +74,8 @@ export function ListingsProvider({ children }: { children: ReactNode }) {
         currency: "TRY",
         createdAt: now,
         updatedAt: now,
+        // Free publish: valid for 1 year from create/publish date.
+        validUntil: input.validUntil ?? freeListingValidUntil(now),
       };
       persist([listing, ...listings]);
       return listing;
@@ -100,9 +107,22 @@ export function ListingsProvider({ children }: { children: ReactNode }) {
 
   const setStatus = useCallback(
     (id: string, status: ListingStatus) => {
+      const existing = listings.find((l) => l.id === id);
+      if (status === "approved") {
+        const publishedAt = new Date().toISOString();
+        // On approve: ensure a fresh 1-year free validity window when missing or re-approving.
+        updateListing(id, {
+          status,
+          validUntil:
+            existing?.status === "approved" && existing.validUntil
+              ? existing.validUntil
+              : freeListingValidUntil(publishedAt),
+        });
+        return;
+      }
       updateListing(id, { status });
     },
-    [updateListing],
+    [listings, updateListing],
   );
 
   const resetData = useCallback(() => {

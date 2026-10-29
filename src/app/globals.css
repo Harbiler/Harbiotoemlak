@@ -53,8 +53,8 @@
 }
 
 :root {
-  /* Soft pink marketplace — blush surfaces, rose brand */
-  --background: #fdf4f7;
+  /* Soft pink marketplace — white page, rose brand accents */
+  --background: #ffffff;
   --foreground: #3a1526;
   --ink: #4a1830;
   --mist: #fce8f0;
@@ -62,7 +62,7 @@
   --sand: #f9a8d4;
   --card: #fff7fa;
   --card-foreground: #3a1526;
-  --popover: #fffafc;
+  --popover: #ffffff;
   --popover-foreground: #3a1526;
   --primary: #db2777;
   --primary-foreground: #fff5f9;
@@ -82,7 +82,7 @@
   --chart-4: #f472b6;
   --chart-5: #9d174d;
   --radius: 0.75rem;
-  --sidebar: #fdf4f7;
+  --sidebar: #ffffff;
   --sidebar-foreground: #3a1526;
   --sidebar-primary: #db2777;
   --sidebar-primary-foreground: #fff5f9;
@@ -98,11 +98,8 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-image:
-      radial-gradient(ellipse 80% 50% at 10% -10%, rgba(219, 39, 119, 0.12), transparent 50%),
-      radial-gradient(ellipse 60% 40% at 100% 0%, rgba(244, 114, 182, 0.14), transparent 45%),
-      linear-gradient(180deg, #fff8fb 0%, #fdf4f7 40%, #faeef3 100%);
-    background-attachment: fixed;
+    background-color: #ffffff;
+    background-image: none;
   }
   html {
     @apply font-sans;

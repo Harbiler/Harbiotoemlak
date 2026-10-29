@@ -51,6 +51,8 @@ export interface Listing {
   featured?: boolean;
   createdAt: string;
   updatedAt: string;
+  /** Yayın geçerlilik bitişi (ISO). Yeni ilanlar yayın tarihinden itibaren 1 yıl ücretsiz. */
+  validUntil: string;
   fields: Record<string, string | number | boolean>;
 }
 

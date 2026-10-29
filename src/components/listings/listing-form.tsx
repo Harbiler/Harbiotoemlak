@@ -7,6 +7,11 @@ import { CITY_NAMES, CITIES } from "@/lib/cities";
 import { useAuth } from "@/context/auth-context";
 import { useListings } from "@/context/listings-context";
 import type { CategorySlug, Listing, ListingStatus, MembershipKind } from "@/lib/types";
+import { formatDateShort } from "@/lib/format";
+import {
+  freeListingCopy,
+  freeListingValidUntil,
+} from "@/lib/listing-validity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -200,6 +205,19 @@ export function ListingForm({
         ? listing.status
         : "approved";
 
+    const nextStatus: ListingStatus = adminMode
+      ? status
+      : listing
+        ? listing.status
+        : "approved";
+    const nowIso = new Date().toISOString();
+    const validUntil =
+      !listing
+        ? freeListingValidUntil(nowIso)
+        : nextStatus === "approved" && listing.status !== "approved"
+          ? freeListingValidUntil(nowIso)
+          : listing.validUntil || freeListingValidUntil(listing.createdAt);
+
     const payload = {
       category: form.category,
       title: form.title.trim(),
@@ -213,8 +231,9 @@ export function ListingForm({
       sellerType,
       sellerKurumsalType: listing?.sellerKurumsalType ?? user.kurumsalType,
       sellerId: listing?.sellerId ?? user.id,
-      status: adminMode ? status : listing ? listing.status : "approved",
+      status: nextStatus,
       featured: listing?.featured,
+      validUntil,
       fields: parsedFields,
     };
 
@@ -484,18 +503,26 @@ export function ListingForm({
         )}
       </div>
 
+      <div className="rounded-xl border border-pink-500/20 bg-[color-mix(in_oklab,#fff7fa_90%,#fce7f0)] p-4 text-sm text-[var(--ink)]">
+        <p className="font-medium">{freeListingCopy.badge}</p>
+        <p className="mt-1 text-xs text-stone-600">{freeListingCopy.detail}</p>
+        {listing?.validUntil && (
+          <p className="mt-1 text-xs text-stone-500">
+            Geçerli süre: {formatDateShort(listing.validUntil)} tarihine kadar
+          </p>
+        )}
+      </div>
+
       <div className="flex flex-wrap gap-3">
         <Button type="submit" disabled={saving} className="bg-[var(--lagoon)] hover:bg-[#be185d]">
-          {listing ? "Kaydet" : "İlanı yayınla"}
+          {listing ? "Kaydet" : "Ücretsiz yayınla"}
         </Button>
         <Button type="button" variant="outline" onClick={() => router.back()}>
           Vazgeç
         </Button>
       </div>
-      {!listing && user?.role !== "admin" && (
-        <p className="text-xs text-stone-500">
-          Yeni ilanlar otomatik olarak onaylanır ve hemen yayına alınır.
-        </p>
+      {!listing && (
+        <p className="text-xs text-stone-500">{freeListingCopy.publishHint}</p>
       )}
     </form>
   );

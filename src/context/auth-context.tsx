@@ -12,6 +12,8 @@ import {
 import {
   loadSessionUserId,
   loadUsers,
+  saveRememberPreference,
+  saveRememberedEmail,
   saveSessionUserId,
   saveUsers,
 } from "@/lib/storage";
@@ -31,7 +33,11 @@ interface AuthContextValue {
   user: User | null;
   users: User[];
   ready: boolean;
-  login: (email: string, password: string) => { ok: true } | { ok: false; error: string };
+  login: (
+    email: string,
+    password: string,
+    remember?: boolean,
+  ) => { ok: true } | { ok: false; error: string };
   register: (input: RegisterInput) => { ok: true } | { ok: false; error: string };
   logout: () => void;
   updateUser: (id: string, patch: Partial<User>) => void;
@@ -62,13 +68,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(
-    (email: string, password: string) => {
+    (email: string, password: string, remember = true) => {
       const found = users.find(
         (u) => u.email.toLowerCase() === email.trim().toLowerCase() && u.password === password,
       );
       if (!found) return { ok: false as const, error: "E-posta veya şifre hatalı." };
+      saveRememberPreference(remember);
+      if (remember) saveRememberedEmail(found.email);
+      else saveRememberedEmail(null);
       setUser(found);
-      saveSessionUserId(found.id);
+      saveSessionUserId(found.id, remember);
       return { ok: true as const };
     },
     [users],

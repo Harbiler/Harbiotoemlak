@@ -52,11 +52,6 @@ export function SiteFooter() {
                 Ücretsiz İlan Ver
               </Link>
             </li>
-            <li>
-              <Link href="/giris?admin=1" className="hover:text-white">
-                Admin Yönetim Paneli
-              </Link>
-            </li>
           </ul>
         </div>
         <div>

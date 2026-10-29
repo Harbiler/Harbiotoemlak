@@ -93,8 +93,8 @@ export default function AccountPage() {
         İlanlarım
       </h2>
       <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-        Evcil hayvan oteli ilanlarınızda müsaitlik durumunu buradan
-        değiştirebilirsiniz.
+        Yayın ücretsizdir. Evcil hayvan oteli ilanlarınızda müsaitlik durumunu
+        buradan değiştirebilirsiniz.
       </p>
       <div className="mt-4">
         {!listingsReady ? (

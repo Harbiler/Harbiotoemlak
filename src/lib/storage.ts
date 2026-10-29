@@ -1,3 +1,4 @@
+import { freeListingValidUntil } from "./listing-validity";
 import { SEED_LISTINGS, SEED_USERS } from "./seed";
 import type {
   CaregiverApplication,
@@ -9,10 +10,21 @@ import type {
 const USERS_KEY = "harbidenbak.users";
 const LISTINGS_KEY = "harbidenbak.listings";
 const SESSION_KEY = "harbidenbak.session";
+const REMEMBER_KEY = "harbidenbak.remember";
+const REMEMBERED_EMAIL_KEY = "harbidenbak.rememberedEmail";
 const PET_HOTEL_APPS_KEY = "harbidenbak.petHotelApplications";
 const CAREGIVER_APPS_KEY = "harbidenbak.caregiverApplications";
 const VERSION_KEY = "harbidenbak.seedVersion";
-const SEED_VERSION = "13";
+/** Bumped for free 1-year listing validity (validUntil). */
+const SEED_VERSION = "14";
+
+function ensureListingValidity(listing: Listing): Listing {
+  if (listing.validUntil) return listing;
+  return {
+    ...listing,
+    validUntil: freeListingValidUntil(listing.createdAt),
+  };
+}
 
 function canUseStorage(): boolean {
   return typeof window !== "undefined" && !!window.localStorage;
@@ -59,9 +71,18 @@ export function loadListings(): Listing[] {
     ) as Listing[];
     let changed = false;
     const next = listings.map((l) => {
-      if (l.status !== "pending") return l;
-      changed = true;
-      return { ...l, status: "approved" as const };
+      let row = ensureListingValidity(l);
+      if (row !== l) changed = true;
+      if (row.status === "pending") {
+        changed = true;
+        // Keep auto-approve; start free validity from approval/load time if missing.
+        row = {
+          ...row,
+          status: "approved" as const,
+          validUntil: row.validUntil || freeListingValidUntil(),
+        };
+      }
+      return row;
     });
     if (changed) saveListings(next);
     return next;
@@ -75,15 +96,51 @@ export function saveListings(listings: Listing[]): void {
   localStorage.setItem(LISTINGS_KEY, JSON.stringify(listings));
 }
 
-export function loadSessionUserId(): string | null {
-  if (!canUseStorage()) return null;
-  return localStorage.getItem(SESSION_KEY);
+export function loadRememberPreference(): boolean {
+  if (!canUseStorage()) return true;
+  const raw = localStorage.getItem(REMEMBER_KEY);
+  if (raw === null) return true;
+  return raw === "1";
 }
 
-export function saveSessionUserId(userId: string | null): void {
+export function saveRememberPreference(remember: boolean): void {
   if (!canUseStorage()) return;
-  if (userId) localStorage.setItem(SESSION_KEY, userId);
-  else localStorage.removeItem(SESSION_KEY);
+  localStorage.setItem(REMEMBER_KEY, remember ? "1" : "0");
+  if (!remember) localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+}
+
+export function loadRememberedEmail(): string | null {
+  if (!canUseStorage()) return null;
+  if (!loadRememberPreference()) return null;
+  return localStorage.getItem(REMEMBERED_EMAIL_KEY);
+}
+
+export function saveRememberedEmail(email: string | null): void {
+  if (!canUseStorage()) return;
+  if (email) localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
+  else localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+}
+
+export function loadSessionUserId(): string | null {
+  if (!canUseStorage()) return null;
+  return localStorage.getItem(SESSION_KEY) ?? sessionStorage.getItem(SESSION_KEY);
+}
+
+export function saveSessionUserId(userId: string | null, remember?: boolean): void {
+  if (!canUseStorage()) return;
+  if (!userId) {
+    localStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
+    return;
+  }
+  const persist = remember ?? loadRememberPreference();
+  if (persist) {
+    localStorage.setItem(SESSION_KEY, userId);
+    sessionStorage.removeItem(SESSION_KEY);
+  } else {
+    sessionStorage.setItem(SESSION_KEY, userId);
+    localStorage.removeItem(SESSION_KEY);
+  }
 }
 
 export function loadPetHotelApplications(): PetHotelApplication[] {

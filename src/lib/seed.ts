@@ -1,7 +1,17 @@
+import { freeListingValidUntil } from "./listing-validity";
 import type { Listing, User } from "./types";
 
 const now = Date.now();
 const daysAgo = (d: number) => new Date(now - d * 86400000).toISOString();
+
+type SeedListing = Omit<Listing, "validUntil"> & { validUntil?: string };
+
+function withValidUntil(listings: SeedListing[]): Listing[] {
+  return listings.map((l) => ({
+    ...l,
+    validUntil: l.validUntil ?? freeListingValidUntil(l.createdAt),
+  }));
+}
 
 export const SEED_USERS: User[] = [
   {
@@ -50,7 +60,7 @@ export const SEED_USERS: User[] = [
   },
 ];
 
-export const SEED_LISTINGS: Listing[] = [
+const RAW_SEED_LISTINGS: SeedListing[] = [
   {
     id: "l-emlak-1",
     category: "emlak",
@@ -1180,3 +1190,5 @@ export const SEED_LISTINGS: Listing[] = [
     },
   },
 ];
+
+export const SEED_LISTINGS: Listing[] = withValidUntil(RAW_SEED_LISTINGS);
