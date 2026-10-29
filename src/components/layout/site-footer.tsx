@@ -59,15 +59,16 @@ export function SiteFooter() {
             İletişim
           </p>
           <ul className="mt-4 space-y-2 text-sm text-white/80">
-            <li>destek@harbidenbak.com</li>
-            <li>0850 000 00 00</li>
-            <li>Hafta içi 09:00–18:00</li>
-            <li className="pt-2 text-white/50">Demo uygulama — gerçek destek hattı değildir.</li>
+            <li>
+              <a href="mailto:harbidenbakdestek@hotmail.com" className="hover:text-white">
+                harbidenbakdestek@hotmail.com
+              </a>
+            </li>
           </ul>
         </div>
       </div>
       <div className="border-t border-white/10 py-4 text-center text-xs text-white/40">
-        © 2026 Harbiden Bak · Demo ilan sitesi · Veriler tarayıcınızda saklanır
+        © 2026 Harbiden Bak · Tüm hakları saklıdır · Veriler tarayıcınızda saklanır
       </div>
     </footer>
   );
