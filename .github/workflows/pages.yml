@@ -1,13 +1,9 @@
-# Static GitHub Pages build (optional).
-# Full Next.js features need Vercel; see GITHUB_PAGES.md.
 name: GitHub Pages
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths:
-      - ".github/workflows/pages.yml"
 
 permissions:
   contents: read
@@ -29,20 +25,18 @@ jobs:
           cache: npm
       - name: Install
         run: npm ci
-      - name: Note — static export not enabled by default
+      - name: Build static export
+        run: npm run build
+      - name: Verify out/
         run: |
-          echo "Harbiden Bak is a Next.js App Router app."
-          echo "Enable output:'export' + generateStaticParams before using this job for real Pages deploys."
-          echo "See GITHUB_PAGES.md. Prefer Vercel for www.harbidenbak.com."
-          npm run build
-      - name: Upload artifact if out/ exists
-        if: ${{ hashFiles('out/**') != '' }}
-        uses: actions/upload-pages-artifact@v3
+          test -d out
+          test -f out/index.html
+          ls -la out | head -40
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: out
 
   deploy:
-    if: ${{ hashFiles('out/**') != '' }}
     needs: build
     runs-on: ubuntu-latest
     environment:
