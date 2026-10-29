@@ -59,7 +59,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const sid = loadSessionUserId();
     if (sid) {
       const found = all.find((u) => u.id === sid) ?? null;
-      setUser(found);
+      if (found?.restricted) {
+        saveSessionUserId(null);
+        setUser(null);
+      } else {
+        setUser(found);
+      }
     }
     setReady(true);
   }, []);
@@ -75,6 +80,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         (u) => u.email.toLowerCase() === email.trim().toLowerCase() && u.password === password,
       );
       if (!found) return { ok: false as const, error: "E-posta veya şifre hatalı." };
+      if (found.restricted) {
+        return {
+          ok: false as const,
+          error: "Hesabınız kısıtlanmıştır. Destek ile iletişime geçin.",
+        };
+      }
       saveRememberPreference(remember);
       if (remember) saveRememberedEmail(found.email);
       else saveRememberedEmail(null);

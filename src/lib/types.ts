@@ -32,6 +32,8 @@ export interface User {
   membershipKind: MembershipKind;
   kurumsalType?: KurumsalType;
   companyName?: string;
+  /** Admin kısıtlama / ban — true ise giriş engellenir */
+  restricted?: boolean;
   createdAt: string;
 }
 
@@ -114,8 +116,10 @@ export interface CaregiverApplication {
   phone: string;
   /** Örn. Türkmenistanlı, Türkiyeli */
   vatandaslik: string;
-  residenceDocument: ApplicationFile;
-  criminalRecordDocument: ApplicationFile;
+  /** Yaşadığı şehir (metin) — ikametgâh belgesi yok; yeni başvurularda zorunlu */
+  city?: string;
+  /** Açık adres bilgisi (metin) — yeni başvurularda zorunlu */
+  address?: string;
   profilePhoto: ApplicationFile;
   /** Kimlik ön — pasaport yoksa ön+arka zorunlu */
   idFront?: ApplicationFile;
@@ -123,6 +127,10 @@ export interface CaregiverApplication {
   idBack?: ApplicationFile;
   /** Pasaport — kimlik ön+arka yerine yeterli */
   passport?: ApplicationFile;
+  /** Eski başvurularda kalabilir; yeni formda yok */
+  residenceDocument?: ApplicationFile;
+  /** Eski başvurularda kalabilir; yeni formda yok */
+  criminalRecordDocument?: ApplicationFile;
   status: CaregiverApplicationStatus;
   createdAt: string;
 }

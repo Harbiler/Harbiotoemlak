@@ -15,8 +15,8 @@ const REMEMBERED_EMAIL_KEY = "harbidenbak.rememberedEmail";
 const PET_HOTEL_APPS_KEY = "harbidenbak.petHotelApplications";
 const CAREGIVER_APPS_KEY = "harbidenbak.caregiverApplications";
 const VERSION_KEY = "harbidenbak.seedVersion";
-/** Bumped for Bakıcı vatandaşlık + kimlik/pasaport alanları. */
-const SEED_VERSION = "15";
+/** Bumped for Bakıcı adres bilgisi alanı. */
+const SEED_VERSION = "17";
 
 function ensureListingValidity(listing: Listing): Listing {
   if (listing.validUntil) return listing;
@@ -263,6 +263,11 @@ export function updateCaregiverApplicationStatus(
   const apps = loadCaregiverApplications().map((a) =>
     a.id === id ? { ...a, status } : a,
   );
+  saveCaregiverApplications(apps);
+}
+
+export function deleteCaregiverApplication(id: string): void {
+  const apps = loadCaregiverApplications().filter((a) => a.id !== id);
   saveCaregiverApplications(apps);
 }
 

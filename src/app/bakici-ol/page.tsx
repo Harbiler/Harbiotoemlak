@@ -6,9 +6,9 @@ import { IdentityDocsFields } from "@/components/listings/identity-docs-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  DOC_ACCEPTED,
   PHOTO_ACCEPTED,
   hasRequiredIdentityDocs,
   IDENTITY_DOCS_ERROR,
@@ -17,53 +17,13 @@ import {
 import { addCaregiverApplication } from "@/lib/storage";
 import { ArrowLeft, HeartHandshake, Upload } from "lucide-react";
 
-function FileUploadField({
-  id,
-  label,
-  hint,
-  file,
-  accept,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  hint: string;
-  file: File | null;
-  accept: string;
-  onChange: (file: File | null) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
-      <label
-        htmlFor={id}
-        className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border border-dashed border-[color-mix(in_oklab,var(--lagoon)_28%,transparent)] bg-white/70 px-4 py-6 text-center transition hover:bg-[var(--mist)]"
-      >
-        <Upload className="size-5 text-[var(--lagoon)]" />
-        <span className="text-sm font-medium text-[var(--ink)]">
-          {file ? file.name : `${label} yükle`}
-        </span>
-        <span className="text-xs text-[var(--muted-foreground)]">{hint}</span>
-        <Input
-          id={id}
-          type="file"
-          accept={accept}
-          className="sr-only"
-          onChange={(e) => onChange(e.target.files?.[0] ?? null)}
-          required
-        />
-      </label>
-    </div>
-  );
-}
-
 export default function CaregiverApplyPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [vatandaslik, setVatandaslik] = useState("");
-  const [residenceFile, setResidenceFile] = useState<File | null>(null);
-  const [criminalFile, setCriminalFile] = useState<File | null>(null);
+  const [city, setCity] = useState("");
+  const [address, setAddress] = useState("");
   const [profileFile, setProfileFile] = useState<File | null>(null);
   const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
   const [idBackFile, setIdBackFile] = useState<File | null>(null);
@@ -84,8 +44,16 @@ export default function CaregiverApplyPage() {
       setError("Vatandaşlık / ülke zorunludur.");
       return;
     }
-    if (!residenceFile || !criminalFile || !profileFile) {
-      setError("İkametgâh, sabıka kaydı ve profil resmi yüklenmelidir.");
+    if (!city.trim()) {
+      setError("Yaşadığınız şehir zorunludur.");
+      return;
+    }
+    if (!address.trim()) {
+      setError("Adres bilgisi zorunludur.");
+      return;
+    }
+    if (!profileFile) {
+      setError("Profil resmi yüklenmelidir.");
       return;
     }
     if (
@@ -101,16 +69,7 @@ export default function CaregiverApplyPage() {
 
     setSaving(true);
     try {
-      const [
-        residenceDocument,
-        criminalRecordDocument,
-        profilePhoto,
-        idFront,
-        idBack,
-        passport,
-      ] = await Promise.all([
-        readFileAsAppFile(residenceFile),
-        readFileAsAppFile(criminalFile),
+      const [profilePhoto, idFront, idBack, passport] = await Promise.all([
         readFileAsAppFile(profileFile, { imagesOnly: true }),
         idFrontFile ? readFileAsAppFile(idFrontFile) : Promise.resolve(undefined),
         idBackFile ? readFileAsAppFile(idBackFile) : Promise.resolve(undefined),
@@ -121,8 +80,8 @@ export default function CaregiverApplyPage() {
         email: email.trim(),
         phone: phone.trim(),
         vatandaslik: vatandaslik.trim(),
-        residenceDocument,
-        criminalRecordDocument,
+        city: city.trim(),
+        address: address.trim(),
         profilePhoto,
         ...(idFront ? { idFront } : {}),
         ...(idBack ? { idBack } : {}),
@@ -181,8 +140,9 @@ export default function CaregiverApplyPage() {
           Bakıcı Olmak İstiyorum
         </h1>
         <p className="mt-2 text-[var(--muted-foreground)]">
-          Vatandaşlık, kimlik veya pasaport, ikametgâh, sabıka kaydı ve profil
-          fotoğrafınızla başvurun. Başvurular otomatik onaylanır.
+          Vatandaşlık, kimlik veya pasaport, yaşadığınız şehir, adres
+          bilgisi ve profil fotoğrafınızla başvurun. Başvurular otomatik
+          onaylanır.
         </p>
       </div>
 
@@ -243,6 +203,31 @@ export default function CaregiverApplyPage() {
           />
         </div>
 
+        <div className="space-y-2">
+          <Label htmlFor="city">Şehir</Label>
+          <Input
+            id="city"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder="Örn. İstanbul"
+            required
+            className="h-10 bg-white"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="address">Adres Bilgisi</Label>
+          <Textarea
+            id="address"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            placeholder="Açık adres (ilçe, mahalle, sokak, no)"
+            required
+            rows={3}
+            className="bg-white"
+          />
+        </div>
+
         <IdentityDocsFields
           idPrefix="bakici"
           idFront={idFrontFile}
@@ -251,24 +236,6 @@ export default function CaregiverApplyPage() {
           onIdFront={setIdFrontFile}
           onIdBack={setIdBackFile}
           onPassport={setPassportFile}
-        />
-
-        <FileUploadField
-          id="residenceDocument"
-          label="İkametgah"
-          hint="JPEG, PNG, WEBP veya PDF · en fazla 2.5 MB"
-          file={residenceFile}
-          accept={DOC_ACCEPTED}
-          onChange={setResidenceFile}
-        />
-
-        <FileUploadField
-          id="criminalRecord"
-          label="Sabıka kaydı"
-          hint="JPEG, PNG, WEBP veya PDF · en fazla 2.5 MB"
-          file={criminalFile}
-          accept={DOC_ACCEPTED}
-          onChange={setCriminalFile}
         />
 
         <div className="space-y-2">

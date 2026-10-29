@@ -11,15 +11,16 @@ import { freeListingCopy } from "@/lib/listing-validity";
 import {
   approvePendingCaregiverApplications,
   approvePendingPetHotelApplications,
+  deleteCaregiverApplication,
   updateCaregiverApplicationStatus,
   updatePetHotelApplicationStatus,
 } from "@/lib/storage";
-import type {
-  CaregiverApplication,
-  Listing,
-  ListingStatus,
-  PetHotelApplication,
-  User,
+import {
+  listingNumber,
+  type CaregiverApplication,
+  type Listing,
+  type PetHotelApplication,
+  type User,
 } from "@/lib/types";
 import { ListingsLoading } from "@/components/listings/listing-states";
 import { Button } from "@/components/ui/button";
@@ -50,12 +51,82 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Check, EyeOff, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
+import {
+  Ban,
+  Check,
+  EyeOff,
+  Pencil,
+  Plus,
+  RotateCcw,
+  ShieldOff,
+  Trash2,
+} from "lucide-react";
 
-function statusLabel(s: ListingStatus) {
-  if (s === "approved") return "Yayında";
-  if (s === "pending") return "Onay bekliyor";
-  return "Gizli";
+type MemberGroup = "all" | "bireysel" | "kurumsal" | "bakici";
+
+function membershipLabel(u: User): string {
+  if (u.membershipKind === "kurumsal") {
+    if (u.kurumsalType === "galeri") return "Kurumsal · Galeri";
+    if (u.kurumsalType === "emlak") return "Kurumsal · Emlak";
+    return "Kurumsal";
+  }
+  return "Bireysel";
+}
+
+function listingMatchesQuery(l: Listing, needle: string): boolean {
+  if (!needle) return true;
+  const n = needle.toLowerCase().trim();
+  const cat = getCategory(l.category);
+  const hay = [
+    l.id,
+    listingNumber(l.id),
+    l.title,
+    l.city,
+    l.district,
+    l.contactName,
+    l.category,
+    cat?.name ?? "",
+    cat?.shortName ?? "",
+  ]
+    .join(" ")
+    .toLowerCase();
+  return hay.includes(n);
+}
+
+function userMatchesQuery(u: User, needle: string): boolean {
+  if (!needle) return true;
+  const n = needle.toLowerCase().trim();
+  const hay = [
+    u.id,
+    u.name,
+    u.email,
+    u.phone,
+    u.companyName ?? "",
+    u.tcKimlikNo ?? "",
+    u.address ?? "",
+    membershipLabel(u),
+  ]
+    .join(" ")
+    .toLowerCase();
+  return hay.includes(n);
+}
+
+function caregiverMatchesQuery(a: CaregiverApplication, needle: string): boolean {
+  if (!needle) return true;
+  const n = needle.toLowerCase().trim();
+  const hay = [
+    a.id,
+    a.fullName,
+    a.email,
+    a.phone,
+    a.vatandaslik,
+    a.city ?? "",
+    a.address ?? "",
+    "bakıcı",
+  ]
+    .join(" ")
+    .toLowerCase();
+  return hay.includes(n);
 }
 
 export default function AdminPage() {
@@ -71,8 +142,12 @@ export default function AdminPage() {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(HEPSI);
   const [categoryFilter, setCategoryFilter] = useState<string>(HEPSI);
+  const [userQ, setUserQ] = useState("");
+  const [memberGroup, setMemberGroup] = useState<MemberGroup>("all");
   const [deleteTarget, setDeleteTarget] = useState<Listing | null>(null);
   const [userDelete, setUserDelete] = useState<User | null>(null);
+  const [caregiverDelete, setCaregiverDelete] =
+    useState<CaregiverApplication | null>(null);
   const [petApps, setPetApps] = useState<PetHotelApplication[]>([]);
   const [caregiverApps, setCaregiverApps] = useState<CaregiverApplication[]>(
     [],
@@ -115,19 +190,33 @@ export default function AdminPage() {
     return listings.filter((l) => {
       if (!isHepsi(statusFilter) && l.status !== statusFilter) return false;
       if (!isHepsi(categoryFilter) && l.category !== categoryFilter) return false;
-      if (q) {
-        const needle = q.toLowerCase();
-        if (
-          !l.title.toLowerCase().includes(needle) &&
-          !l.city.toLowerCase().includes(needle) &&
-          !l.contactName.toLowerCase().includes(needle)
-        ) {
-          return false;
-        }
-      }
-      return true;
+      return listingMatchesQuery(l, q);
     });
   }, [listings, q, statusFilter, categoryFilter]);
+
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      if (memberGroup === "bireysel" && u.membershipKind !== "bireysel")
+        return false;
+      if (memberGroup === "kurumsal" && u.membershipKind !== "kurumsal")
+        return false;
+      if (memberGroup === "bakici") return false;
+      return userMatchesQuery(u, userQ);
+    });
+  }, [users, userQ, memberGroup]);
+
+  const filteredCaregivers = useMemo(() => {
+    if (memberGroup === "bireysel" || memberGroup === "kurumsal") return [];
+    return caregiverApps.filter((a) => caregiverMatchesQuery(a, userQ));
+  }, [caregiverApps, userQ, memberGroup]);
+
+  const bireyselCount = users.filter((u) => u.membershipKind === "bireysel").length;
+  const kurumsalCount = users.filter((u) => u.membershipKind === "kurumsal").length;
+
+  function toggleRestrict(u: User) {
+    if (u.id === user?.id) return;
+    updateUser(u.id, { restricted: !u.restricted });
+  }
 
   if (!ready || !user || user.role !== "admin") {
     return (
@@ -148,7 +237,8 @@ export default function AdminPage() {
             Admin Yönetim Paneli
           </h1>
           <p className="mt-1 text-sm text-stone-600">
-            İlanları onaylayın, gizleyin, düzenleyin; üyelikleri yönetin.
+            Tüm ilanları arayın, düzenleyin veya silin; üyeleri gruplar halinde
+            yönetin.
           </p>
           <p className="mt-2 max-w-xl text-xs text-stone-500">
             {freeListingCopy.adminNote}
@@ -218,10 +308,11 @@ export default function AdminPage() {
         <TabsContent value="listings" className="mt-4 space-y-4">
           <div className="flex flex-wrap gap-3">
             <Input
-              placeholder="İlan ara…"
+              placeholder="Başlık, no, şehir veya kategori ara…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              className="max-w-xs"
+              className="max-w-sm"
+              aria-label="İlan ara"
             />
             <Select
               value={isHepsi(statusFilter) ? HEPSI : statusFilter}
@@ -257,6 +348,10 @@ export default function AdminPage() {
             </Select>
           </div>
 
+          <p className="text-xs text-stone-500">
+            {filtered.length} / {listings.length} ilan gösteriliyor
+          </p>
+
           {!listingsReady ? (
             <ListingsLoading />
           ) : (
@@ -283,7 +378,8 @@ export default function AdminPage() {
                           {l.title}
                         </Link>
                         <p className="text-xs text-stone-500">
-                          {l.city}/{l.district} · {l.contactName}
+                          {listingNumber(l.id)} · {l.city}/{l.district} ·{" "}
+                          {l.contactName}
                         </p>
                       </TableCell>
                       <TableCell className="text-sm">
@@ -291,24 +387,35 @@ export default function AdminPage() {
                       </TableCell>
                       <TableCell className="text-sm">{formatPrice(l.price)}</TableCell>
                       <TableCell>
-                        <Badge
-                          variant={
-                            l.status === "approved"
-                              ? "default"
-                              : l.status === "pending"
-                                ? "secondary"
-                                : "outline"
-                          }
+                        <Select
+                          value={l.status}
+                          onValueChange={(v) => {
+                            if (v === "pending" || v === "approved" || v === "hidden") {
+                              setStatus(l.id, v);
+                            }
+                          }}
+                          items={{
+                            pending: "Onay bekliyor",
+                            approved: "Yayında",
+                            hidden: "Gizli",
+                          }}
                         >
-                          {statusLabel(l.status)}
-                        </Badge>
+                          <SelectTrigger className="h-8 w-[140px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="z-[200]">
+                            <SelectItem value="pending">Onay bekliyor</SelectItem>
+                            <SelectItem value="approved">Yayında</SelectItem>
+                            <SelectItem value="hidden">Gizli</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell className="text-xs text-stone-600">
-                        <span className="font-medium text-[var(--lagoon)]">Ücretsiz</span>
+                        <span className="font-medium text-[var(--lagoon)]">
+                          Ücretsiz
+                        </span>
                         <br />
-                        {l.validUntil
-                          ? formatDateShort(l.validUntil)
-                          : "—"}
+                        {l.validUntil ? formatDateShort(l.validUntil) : "—"}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap justify-end gap-1">
@@ -332,7 +439,12 @@ export default function AdminPage() {
                               <EyeOff className="size-4" />
                             </Button>
                           )}
-                          <Button size="icon-sm" variant="ghost" asChild title="Düzenle">
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            asChild
+                            title="Düzenle"
+                          >
                             <Link href={`/ilan/${l.id}/duzenle`}>
                               <Pencil className="size-4" />
                             </Link>
@@ -351,7 +463,10 @@ export default function AdminPage() {
                   ))}
                   {filtered.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="py-8 text-center text-sm text-stone-500">
+                      <TableCell
+                        colSpan={6}
+                        className="py-8 text-center text-sm text-stone-500"
+                      >
                         Eşleşen ilan yok.
                       </TableCell>
                     </TableRow>
@@ -362,73 +477,283 @@ export default function AdminPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="users" className="mt-4">
-          <div className="overflow-x-auto hb-surface">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Üye</TableHead>
-                  <TableHead>Üyelik</TableHead>
-                  <TableHead>Rol</TableHead>
-                  <TableHead className="text-right">İşlem</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((u) => (
-                  <TableRow key={u.id}>
-                    <TableCell>
-                      <p className="font-medium">{u.name}</p>
-                      <p className="text-xs text-stone-500">
-                        {u.email} · {u.phone}
-                      </p>
-                      {u.companyName && (
-                        <p className="text-xs text-stone-500">{u.companyName}</p>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {u.membershipKind === "kurumsal" ? (
-                        <>
-                          Kurumsal
-                          {u.kurumsalType === "galeri" && " · Galeri"}
-                          {u.kurumsalType === "emlak" && " · Emlak"}
-                        </>
-                      ) : (
-                        "Bireysel"
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={u.role}
-                        onValueChange={(role) =>
-                          updateUser(u.id, { role: (role as "user" | "admin") ?? u.role })
-                        }
-                        disabled={u.id === user.id}
-                        items={{ user: "Kullanıcı", admin: "Admin" }}
-                      >
-                        <SelectTrigger className="w-[120px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="z-[200]">
-                          <SelectItem value="user">Kullanıcı</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="icon-sm"
-                        variant="ghost"
-                        disabled={u.id === user.id}
-                        onClick={() => setUserDelete(u)}
-                      >
-                        <Trash2 className="size-4 text-red-600" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+        <TabsContent value="users" className="mt-4 space-y-4">
+          <div className="flex flex-wrap gap-3">
+            <Input
+              placeholder="Üye ara (ad, e-posta, telefon, şirket)…"
+              value={userQ}
+              onChange={(e) => setUserQ(e.target.value)}
+              className="max-w-sm"
+              aria-label="Üye ara"
+            />
           </div>
+
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                { id: "all" as const, label: `Tümü (${users.length + caregiverApps.length})` },
+                { id: "bireysel" as const, label: `Bireysel (${bireyselCount})` },
+                { id: "kurumsal" as const, label: `Kurumsal (${kurumsalCount})` },
+                {
+                  id: "bakici" as const,
+                  label: `Bakıcı (${caregiverApps.length})`,
+                },
+              ] as const
+            ).map((g) => (
+              <Button
+                key={g.id}
+                size="sm"
+                variant={memberGroup === g.id ? "default" : "outline"}
+                className={
+                  memberGroup === g.id
+                    ? "bg-[var(--lagoon)] hover:bg-[#be185d]"
+                    : undefined
+                }
+                onClick={() => setMemberGroup(g.id)}
+              >
+                {g.label}
+              </Button>
+            ))}
+          </div>
+
+          {(memberGroup === "all" ||
+            memberGroup === "bireysel" ||
+            memberGroup === "kurumsal") && (
+            <div className="space-y-2">
+              {memberGroup === "all" && (
+                <h2 className="text-sm font-semibold text-[var(--ink)]">
+                  Bireysel / Kurumsal üyeler
+                </h2>
+              )}
+              <div className="overflow-x-auto hb-surface">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Üye</TableHead>
+                      <TableHead>Üyelik</TableHead>
+                      <TableHead>Durum</TableHead>
+                      <TableHead>Rol</TableHead>
+                      <TableHead className="text-right">İşlem</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((u) => (
+                      <TableRow
+                        key={u.id}
+                        className={u.restricted ? "bg-red-50/60" : undefined}
+                      >
+                        <TableCell>
+                          <p className="font-medium">{u.name}</p>
+                          <p className="text-xs text-stone-500">
+                            {u.email} · {u.phone}
+                          </p>
+                          {u.companyName && (
+                            <p className="text-xs text-stone-500">
+                              {u.companyName}
+                            </p>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {membershipLabel(u)}
+                        </TableCell>
+                        <TableCell>
+                          {u.restricted ? (
+                            <Badge variant="destructive">Kısıtlı</Badge>
+                          ) : (
+                            <Badge variant="secondary">Aktif</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={u.role}
+                            onValueChange={(role) =>
+                              updateUser(u.id, {
+                                role: (role as "user" | "admin") ?? u.role,
+                              })
+                            }
+                            disabled={u.id === user.id}
+                            items={{ user: "Kullanıcı", admin: "Admin" }}
+                          >
+                            <SelectTrigger className="w-[120px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="z-[200]">
+                              <SelectItem value="user">Kullanıcı</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex flex-wrap justify-end gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={u.id === user.id}
+                              title={
+                                u.restricted
+                                  ? "Kısıtlamayı kaldır"
+                                  : "Kısıtla"
+                              }
+                              onClick={() => toggleRestrict(u)}
+                            >
+                              {u.restricted ? (
+                                <>
+                                  <ShieldOff className="size-4" />
+                                  Kaldır
+                                </>
+                              ) : (
+                                <>
+                                  <Ban className="size-4" />
+                                  Kısıtla
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              size="icon-sm"
+                              variant="ghost"
+                              disabled={u.id === user.id}
+                              title="Sil"
+                              onClick={() => setUserDelete(u)}
+                            >
+                              <Trash2 className="size-4 text-red-600" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredUsers.length === 0 && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={5}
+                          className="py-8 text-center text-sm text-stone-500"
+                        >
+                          Eşleşen üye yok.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
+
+          {(memberGroup === "all" || memberGroup === "bakici") && (
+            <div className="space-y-2">
+              <h2 className="text-sm font-semibold text-[var(--ink)]">
+                Bakıcı başvuruları
+              </h2>
+              <div className="overflow-x-auto hb-surface">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Başvuran</TableHead>
+                      <TableHead>İletişim</TableHead>
+                      <TableHead>Durum</TableHead>
+                      <TableHead className="text-right">İşlem</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredCaregivers.map((app) => (
+                      <TableRow
+                        key={app.id}
+                        className={
+                          app.status === "rejected" ? "bg-red-50/60" : undefined
+                        }
+                      >
+                        <TableCell>
+                          <p className="font-medium">{app.fullName}</p>
+                          <p className="text-xs text-stone-500">
+                            {new Date(app.createdAt).toLocaleString("tr-TR")}
+                          </p>
+                          {app.city && (
+                            <p className="text-xs text-stone-500">
+                              Şehir: {app.city}
+                            </p>
+                          )}
+                          {app.address && (
+                            <p className="text-xs text-stone-500 whitespace-pre-wrap">
+                              Adres: {app.address}
+                            </p>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          <p>{app.email}</p>
+                          <p className="text-xs text-stone-500">{app.phone}</p>
+                          {app.vatandaslik && (
+                            <p className="text-xs text-stone-500">
+                              {app.vatandaslik}
+                            </p>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {app.status === "rejected" ? (
+                            <Badge variant="destructive">Kısıtlı</Badge>
+                          ) : app.status === "reviewed" ? (
+                            <Badge variant="secondary">Onaylı</Badge>
+                          ) : (
+                            <Badge variant="outline">Bekliyor</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex flex-wrap justify-end gap-1">
+                            {app.status === "rejected" ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  updateCaregiverApplicationStatus(
+                                    app.id,
+                                    "reviewed",
+                                  );
+                                  refreshCaregiverApps();
+                                }}
+                              >
+                                <ShieldOff className="size-4" />
+                                Kaldır
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  updateCaregiverApplicationStatus(
+                                    app.id,
+                                    "rejected",
+                                  );
+                                  refreshCaregiverApps();
+                                }}
+                              >
+                                <Ban className="size-4" />
+                                Kısıtla
+                              </Button>
+                            )}
+                            <Button
+                              size="icon-sm"
+                              variant="ghost"
+                              title="Sil"
+                              onClick={() => setCaregiverDelete(app)}
+                            >
+                              <Trash2 className="size-4 text-red-600" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredCaregivers.length === 0 && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={4}
+                          className="py-8 text-center text-sm text-stone-500"
+                        >
+                          Eşleşen bakıcı başvurusu yok.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="pet-hotels" className="mt-4">
@@ -520,7 +845,10 @@ export default function AdminPage() {
                 ))}
                 {petApps.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-8 text-center text-sm text-stone-500">
+                    <TableCell
+                      colSpan={5}
+                      className="py-8 text-center text-sm text-stone-500"
+                    >
                       Henüz pet otel başvurusu yok.
                     </TableCell>
                   </TableRow>
@@ -569,6 +897,16 @@ export default function AdminPage() {
                           Vatandaşlık: {app.vatandaslik}
                         </p>
                       )}
+                      {app.city && (
+                        <p className="text-xs text-stone-600">
+                          Şehir: {app.city}
+                        </p>
+                      )}
+                      {app.address && (
+                        <p className="text-xs text-stone-600 whitespace-pre-wrap">
+                          Adres: {app.address}
+                        </p>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm">
                       <div className="flex flex-col gap-1">
@@ -599,20 +937,24 @@ export default function AdminPage() {
                             Pasaport: {app.passport.name}
                           </a>
                         )}
-                        <a
-                          href={app.residenceDocument.dataUrl}
-                          download={app.residenceDocument.name}
-                          className="text-[var(--lagoon)] hover:underline"
-                        >
-                          İkametgâh: {app.residenceDocument.name}
-                        </a>
-                        <a
-                          href={app.criminalRecordDocument.dataUrl}
-                          download={app.criminalRecordDocument.name}
-                          className="text-[var(--lagoon)] hover:underline"
-                        >
-                          Sabıka: {app.criminalRecordDocument.name}
-                        </a>
+                        {app.residenceDocument && (
+                          <a
+                            href={app.residenceDocument.dataUrl}
+                            download={app.residenceDocument.name}
+                            className="text-[var(--lagoon)] hover:underline"
+                          >
+                            İkametgâh: {app.residenceDocument.name}
+                          </a>
+                        )}
+                        {app.criminalRecordDocument && (
+                          <a
+                            href={app.criminalRecordDocument.dataUrl}
+                            download={app.criminalRecordDocument.name}
+                            className="text-[var(--lagoon)] hover:underline"
+                          >
+                            Sabıka: {app.criminalRecordDocument.name}
+                          </a>
+                        )}
                         <a
                           href={app.profilePhoto.dataUrl}
                           download={app.profilePhoto.name}
@@ -688,7 +1030,8 @@ export default function AdminPage() {
           <DialogHeader>
             <DialogTitle>İlanı sil</DialogTitle>
             <DialogDescription>
-              “{deleteTarget?.title}” kalıcı olarak silinecek. Bu işlem geri alınamaz.
+              “{deleteTarget?.title}” kalıcı olarak silinecek. Bu işlem geri
+              alınamaz.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -725,6 +1068,37 @@ export default function AdminPage() {
               onClick={() => {
                 if (userDelete) deleteUser(userDelete.id);
                 setUserDelete(null);
+              }}
+            >
+              Sil
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!caregiverDelete}
+        onOpenChange={(o) => !o && setCaregiverDelete(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bakıcı başvurusunu sil</DialogTitle>
+            <DialogDescription>
+              “{caregiverDelete?.fullName}” başvurusu kalıcı olarak silinecek.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCaregiverDelete(null)}>
+              Vazgeç
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (caregiverDelete) {
+                  deleteCaregiverApplication(caregiverDelete.id);
+                  refreshCaregiverApps();
+                }
+                setCaregiverDelete(null);
               }}
             >
               Sil
