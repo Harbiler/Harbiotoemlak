@@ -40,6 +40,7 @@ import {
   readFileAsAppFile,
 } from "@/lib/application-file";
 import type { ListingIdentityDocs } from "@/lib/types";
+import { listingPath } from "@/lib/listing-path";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 
 type Step = "kategori" | "form" | "onizleme" | "yayin";
@@ -100,6 +101,15 @@ function NewListingWizard() {
     }
   }, [ready, user, router]);
 
+  // URL ?kategori= / &alt= (e.g. Motorsiklet) → jump to form; Vasıta may still need alt.
+  useEffect(() => {
+    if (draft.category && getCategory(draft.category)) {
+      setStep("form");
+    }
+    // Only on mount / preset — do not re-run when user goes back to kategori.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (user) {
       setDraft((d) => ({
@@ -135,11 +145,19 @@ function NewListingWizard() {
     if (!draft.category) return "Kategori seçin.";
     if (!draft.title.trim()) return "Başlık zorunludur.";
     if (draft.description.trim().length < 20) return "Açıklama en az 20 karakter olmalıdır.";
+    if (!draft.city || !draft.district) return "İl ve ilçe seçin.";
     if (!draft.contactName.trim() || !draft.contactPhone.trim()) {
       return "İletişim bilgileri zorunludur.";
     }
     if (draft.category === "vasita" && !draft.fields.altKategori) {
       return "Vasıta alt kategorisi seçin.";
+    }
+    if (
+      supportsBrandModelSearch(draft.category) &&
+      (draft.category !== "vasita" || draft.fields.altKategori) &&
+      (!draft.fields.marka?.trim() || !draft.fields.model?.trim())
+    ) {
+      return "Marka ve model zorunludur.";
     }
     const fields = category?.fields ?? [];
     for (const f of fields) {
@@ -216,7 +234,7 @@ function NewListingWizard() {
       });
       setStep("yayin");
       setTimeout(() => {
-        router.push(`/ilan/${created.id}`);
+        router.push(listingPath(created.id));
       }, 900);
     } catch (publishErr) {
       setError(
@@ -280,7 +298,18 @@ function NewListingWizard() {
                 key={c.slug}
                 type="button"
                 onClick={() => {
-                  setDraft((d) => ({ ...d, category: c.slug, fields: {} }));
+                  setDraft((d) => {
+                    const fields: Record<string, string> =
+                      c.slug === "vasita" && d.fields.altKategori
+                        ? { altKategori: d.fields.altKategori }
+                        : {};
+                    return {
+                      ...d,
+                      category: c.slug,
+                      // Keep Motorsiklet (etc.) alt when re-picking Vasıta from preset URL.
+                      fields,
+                    };
+                  });
                   setIdFrontFile(null);
                   setIdBackFile(null);
                   setPassportFile(null);
@@ -435,8 +464,10 @@ function NewListingWizard() {
                   </Select>
                 </div>
               )}
-              {supportsBrandModelSearch(category.slug) && (
+              {supportsBrandModelSearch(category.slug) &&
+                (category.slug !== "vasita" || !!draft.fields.altKategori) && (
                 <BrandModelFields
+                  key={`bm-${category.slug}-${draft.fields.altKategori || "all"}`}
                   category={category.slug}
                   catalog={
                     category.slug === "vasita" && draft.fields.altKategori
@@ -446,16 +477,16 @@ function NewListingWizard() {
                   marka={draft.fields.marka ?? ""}
                   model={draft.fields.model ?? ""}
                   onMarkaChange={(v) =>
-                    setDraft({
-                      ...draft,
-                      fields: { ...draft.fields, marka: v, model: "" },
-                    })
+                    setDraft((d) => ({
+                      ...d,
+                      fields: { ...d.fields, marka: v, model: "" },
+                    }))
                   }
                   onModelChange={(v) =>
-                    setDraft({
-                      ...draft,
-                      fields: { ...draft.fields, model: v },
-                    })
+                    setDraft((d) => ({
+                      ...d,
+                      fields: { ...d.fields, model: v },
+                    }))
                   }
                   markaLabel={category.slug === "yedek-parca" ? "Uyumlu Marka" : "Marka"}
                   modelLabel={category.slug === "yedek-parca" ? "Uyumlu Model" : "Model"}
@@ -469,7 +500,10 @@ function NewListingWizard() {
                     return field.key !== "marka" && field.key !== "model";
                   })
                   .map((field) => (
-                  <div key={field.key}>
+                  <div
+                    key={field.key}
+                    className={field.type === "textarea" ? "sm:col-span-2" : undefined}
+                  >
                     <Label>
                       {field.label}
                       {field.required ? " *" : ""}
@@ -499,6 +533,21 @@ function NewListingWizard() {
                             ))}
                           </SelectContent>
                         </Select>
+                      ) : field.type === "textarea" ? (
+                        <Textarea
+                          value={draft.fields[field.key] ?? ""}
+                          placeholder={field.placeholder}
+                          rows={3}
+                          onChange={(e) =>
+                            setDraft({
+                              ...draft,
+                              fields: {
+                                ...draft.fields,
+                                [field.key]: e.target.value,
+                              },
+                            })
+                          }
+                        />
                       ) : (
                         <Input
                           type={field.type === "number" ? "number" : "text"}

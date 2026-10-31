@@ -11,6 +11,7 @@ import {
   isPetHotelListing,
   PET_HOTEL_AVAILABILITY,
 } from "@/lib/pet-hotel-availability";
+import { listingPath } from "@/lib/listing-path";
 import { MapPin } from "lucide-react";
 
 export function ListingCard({
@@ -28,7 +29,7 @@ export function ListingCard({
 
   return (
     <Link
-      href={`/ilan/${listing.id}`}
+      href={listingPath(listing.id)}
       className={cn(
         "group flex flex-col overflow-hidden rounded-2xl border bg-white/90 transition duration-300",
         "hover:-translate-y-1 hover:shadow-[0_12px_40px_-16px_rgba(190,24,93,0.28)]",

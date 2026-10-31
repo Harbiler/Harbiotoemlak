@@ -2,7 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { NAV_CATEGORIES, getCategory, type CategoryField } from "@/lib/categories";
+import {
+  CATEGORIES,
+  NAV_CATEGORIES,
+  getCategory,
+  type CategoryField,
+} from "@/lib/categories";
 import { CITY_NAMES, CITIES } from "@/lib/cities";
 import { useAuth } from "@/context/auth-context";
 import { useListings } from "@/context/listings-context";
@@ -42,6 +47,7 @@ import {
   getVasitaSubcategory,
   VASITA_SUBCATEGORIES,
 } from "@/lib/vasita-subcategories";
+import { listingPath } from "@/lib/listing-path";
 
 interface FormState {
   category: CategorySlug;
@@ -170,6 +176,21 @@ export function ListingForm({
     setForm((f) => ({ ...f, fields: { ...f.fields, [key]: value } }));
   }
 
+  const categorySelectItems = useMemo(() => {
+    const map = new Map(NAV_CATEGORIES.map((c) => [c.slug, c.name]));
+    // Keep legacy / hidden categories (Motorsiklet, Hayvanlar, Özel Ders) selectable when editing.
+    const current = getCategory(form.category);
+    if (current && !map.has(current.slug)) {
+      map.set(current.slug, current.name);
+    }
+    if (adminMode) {
+      for (const c of CATEGORIES) {
+        if (!map.has(c.slug)) map.set(c.slug, c.name);
+      }
+    }
+    return Object.fromEntries(map);
+  }, [form.category, adminMode]);
+
   function validate(): string | null {
     if (!form.title.trim()) return "Başlık zorunludur.";
     if (!form.description.trim() || form.description.trim().length < 20) {
@@ -291,10 +312,10 @@ export function ListingForm({
 
       if (listing) {
         updateListing(listing.id, payload);
-        router.push(adminMode ? "/admin" : `/ilan/${listing.id}`);
+        router.push(adminMode ? "/admin" : listingPath(listing.id));
       } else {
         const created = createListing(payload);
-        router.push(`/ilan/${created.id}`);
+        router.push(listingPath(created.id));
       }
     } catch (submitErr) {
       setError(
@@ -335,15 +356,15 @@ export function ListingForm({
               }
             }}
             disabled={!!listing && !adminMode}
-            items={Object.fromEntries(NAV_CATEGORIES.map((c) => [c.slug, c.name]))}
+            items={categorySelectItems}
           >
             <SelectTrigger className="mt-1.5 w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="z-[200]">
-              {NAV_CATEGORIES.map((c) => (
-                <SelectItem key={c.slug} value={c.slug}>
-                  {c.name}
+              {Object.entries(categorySelectItems).map(([slug, name]) => (
+                <SelectItem key={slug} value={slug}>
+                  {name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -467,8 +488,10 @@ export function ListingForm({
               </Select>
             </div>
           )}
-          {supportsBrandModelSearch(form.category) && (
+          {supportsBrandModelSearch(form.category) &&
+            (form.category !== "vasita" || !!form.fields.altKategori) && (
             <BrandModelFields
+              key={`bm-${form.category}-${form.fields.altKategori || "all"}`}
               category={form.category}
               catalog={
                 form.category === "vasita" && form.fields.altKategori
@@ -477,7 +500,12 @@ export function ListingForm({
               }
               marka={form.fields.marka ?? ""}
               model={form.fields.model ?? ""}
-              onMarkaChange={(v) => setField("marka", v)}
+              onMarkaChange={(v) =>
+                setForm((f) => ({
+                  ...f,
+                  fields: { ...f.fields, marka: v, model: "" },
+                }))
+              }
               onModelChange={(v) => setField("model", v)}
               markaLabel={form.category === "yedek-parca" ? "Uyumlu Marka" : "Marka"}
               modelLabel={form.category === "yedek-parca" ? "Uyumlu Model" : "Model"}

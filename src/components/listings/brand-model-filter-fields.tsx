@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef } from "react";
 import {
   brandCatalogFor,
+  modelsFromCatalog,
   sortedBrandNames,
   type BrandCatalog,
 } from "@/lib/brand-models";
@@ -27,9 +28,9 @@ export function BrandModelFilterFields({
   modelLabel = "Model",
 }: {
   category: string;
-  /** Progressive-enhancement key (e.g. vasita:otomobil). Defaults to category. */
+  /** Progressive-enhancement key (e.g. vasita:motorsiklet). Defaults to category. */
   catalogKey?: string;
-  /** Override brand→model map for this filter. */
+  /** Override brand→model map for this filter (Motorsiklet uses MOTORSIKLET_BRANDS). */
   catalog?: BrandCatalog;
   marka: string;
   model: string;
@@ -49,14 +50,22 @@ export function BrandModelFilterFields({
   markaCb.current = onMarkaChange;
   modelCb.current = onModelChange;
 
-  const resolvedCatalog = catalog ?? brandCatalogFor(category) ?? {};
-  const brands = sortedBrandNames(resolvedCatalog);
   const scriptKey = catalogKey ?? category;
+  // Prefer explicit catalog, then catalogKey (vasita:motorsiklet), then category.
+  const resolvedCatalog =
+    catalog ??
+    brandCatalogFor(scriptKey) ??
+    brandCatalogFor(category) ??
+    {};
+  const brands = sortedBrandNames(resolvedCatalog);
   const normalizedMarka = isHepsi(marka) ? HEPSI : marka;
   const normalizedModel = isHepsi(model) ? HEPSI : model;
-  const initialModels =
-    normalizedMarka !== HEPSI ? resolvedCatalog[normalizedMarka] ?? [] : [];
+  const modelsForMarka =
+    normalizedMarka !== HEPSI
+      ? modelsFromCatalog(resolvedCatalog, normalizedMarka)
+      : [];
 
+  // Bind listeners; re-bind when Model <select> remounts after Marka change.
   useEffect(() => {
     const brandSelect = brandRef.current;
     const modelSelect = modelRef.current;
@@ -78,7 +87,7 @@ export function BrandModelFilterFields({
       brandSelect.removeEventListener("change", onBrand);
       modelSelect.removeEventListener("change", onModel);
     };
-  }, []);
+  }, [normalizedMarka]);
 
   useEffect(() => {
     const brandSelect = brandRef.current;
@@ -126,14 +135,19 @@ export function BrandModelFilterFields({
         <Label htmlFor={modelId} className="text-sm">
           {modelLabel}
         </Label>
+        {/*
+          Remount when Marka changes so progressive-enhancement script options
+          are discarded and React owns a single brand-linked model list.
+        */}
         <select
+          key={`${modelId}-${normalizedMarka}`}
           id={modelId}
           ref={modelRef}
           data-slot="native-select"
           data-hb-role="model"
           className={selectClassName}
           defaultValue={
-            initialModels.includes(normalizedModel)
+            modelsForMarka.includes(normalizedModel)
               ? normalizedModel
               : HEPSI
           }
@@ -144,8 +158,8 @@ export function BrandModelFilterFields({
               ? "Önce marka seçin"
               : "Tüm modeller"}
           </option>
-          {initialModels.map((m) => (
-            <option key={m} value={m}>
+          {modelsForMarka.map((m) => (
+            <option key={`${normalizedMarka}:${m}`} value={m}>
               {m}
             </option>
           ))}

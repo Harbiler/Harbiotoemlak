@@ -26,10 +26,11 @@ export default function RegisterPage() {
   const [address, setAddress] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    if (ready && user) router.replace("/hesabim");
-  }, [ready, user, router]);
+    if (ready && user && !success) router.replace("/hesabim");
+  }, [ready, user, router, success]);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -57,7 +58,11 @@ export default function RegisterPage() {
       setError(result.error);
       return;
     }
-    router.push("/hesabim");
+    setError(null);
+    setSuccess(true);
+    window.setTimeout(() => {
+      router.push("/hesabim");
+    }, 2000);
   }
 
   return (
@@ -77,6 +82,11 @@ export default function RegisterPage() {
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
+        )}
+        {success && (
+          <p className="text-center text-base font-semibold text-green-600" role="status">
+            Başarıyla Kayıt Oldunuz.
+          </p>
         )}
 
         <div>
@@ -219,8 +229,12 @@ export default function RegisterPage() {
           />
         </div>
 
-        <Button type="submit" className="w-full bg-[var(--lagoon)] hover:bg-[#be185d]">
-          Kayıt ol
+        <Button
+          type="submit"
+          className="w-full bg-[var(--lagoon)] hover:bg-[#be185d]"
+          disabled={success}
+        >
+          Kaydet
         </Button>
       </form>
     </div>

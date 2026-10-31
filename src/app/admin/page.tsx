@@ -8,6 +8,7 @@ import { useListings } from "@/context/listings-context";
 import { getCategory, CATEGORIES } from "@/lib/categories";
 import { formatDateShort, formatPrice } from "@/lib/format";
 import { freeListingCopy } from "@/lib/listing-validity";
+import { listingEditPath, listingPath } from "@/lib/listing-path";
 import {
   approvePendingCaregiverApplications,
   approvePendingPetHotelApplications,
@@ -372,7 +373,7 @@ export default function AdminPage() {
                     <TableRow key={l.id}>
                       <TableCell>
                         <Link
-                          href={`/ilan/${l.id}`}
+                          href={listingPath(l.id)}
                           className="font-medium text-pink-950 hover:underline"
                         >
                           {l.title}
@@ -445,7 +446,7 @@ export default function AdminPage() {
                             asChild
                             title="Düzenle"
                           >
-                            <Link href={`/ilan/${l.id}/duzenle`}>
+                            <Link href={listingEditPath(l.id)}>
                               <Pencil className="size-4" />
                             </Link>
                           </Button>

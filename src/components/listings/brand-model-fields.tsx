@@ -2,6 +2,7 @@
 
 import {
   brandCatalogFor,
+  modelsFromCatalog,
   sortedBrandNames,
   supportsBrandModelSearch,
   type BrandCatalog,
@@ -28,9 +29,11 @@ export function BrandModelFields({
   className,
 }: {
   category: string;
+  /** Brand→model map for this form (e.g. Motorsiklet alt kategori). */
   catalog?: BrandCatalog;
   marka: string;
   model: string;
+  /** Parent must clear model when marka changes. */
   onMarkaChange: (value: string) => void;
   onModelChange: (value: string) => void;
   markaLabel?: string;
@@ -42,7 +45,8 @@ export function BrandModelFields({
   if (!resolved && !supportsBrandModelSearch(category)) return null;
   const brandsMap = resolved ?? {};
   const brands = sortedBrandNames(brandsMap);
-  const models = marka ? brandsMap[marka] ?? [] : [];
+  // Strict brand link: only this marka's models (same pattern as cars / filters).
+  const models = modelsFromCatalog(brandsMap, marka);
   const brandItems = Object.fromEntries(brands.map((b) => [b, b]));
   const modelItems = Object.fromEntries(models.map((m) => [m, m]));
 
@@ -56,8 +60,8 @@ export function BrandModelFields({
         <Select
           value={marka || undefined}
           onValueChange={(v) => {
+            // Single parent update — avoids stale double setState wiping marka.
             onMarkaChange(v ?? "");
-            onModelChange("");
           }}
           items={brandItems}
         >
@@ -79,6 +83,7 @@ export function BrandModelFields({
           {required ? " *" : ""}
         </Label>
         <Select
+          key={marka || "no-brand"}
           value={model || undefined}
           onValueChange={(v) => onModelChange(v ?? "")}
           disabled={!marka}
@@ -89,7 +94,7 @@ export function BrandModelFields({
           </SelectTrigger>
           <SelectContent className="z-[200] max-h-72">
             {models.map((m) => (
-              <SelectItem key={m} value={m}>
+              <SelectItem key={`${marka}:${m}`} value={m}>
                 {m}
               </SelectItem>
             ))}

@@ -1,5 +1,9 @@
 import type { BrandCatalog } from "@/lib/brand-models";
-import { MOTORSIKLET_BRANDS, VASITA_BRANDS } from "@/lib/brand-models";
+import {
+  MOTORSIKLET_BRANDS,
+  VASITA_BRANDS,
+  registerBrandCatalog,
+} from "@/lib/brand-models";
 
 export type VasitaSubSlug =
   | "otomobil"
@@ -253,6 +257,7 @@ export const VASITA_SUBCATEGORIES: VasitaSubcategory[] = [
     slug: "motorsiklet",
     name: "Motorsiklet",
     description: "Motosiklet, scooter ve naked modeller",
+    // Brand→model map (Yamaha→MT-07…); never reuse VASITA_BRANDS / car models.
     brands: MOTORSIKLET_BRANDS,
   },
   {
@@ -346,4 +351,9 @@ export function allVasitaBrandCatalogs(): Record<string, BrandCatalog> {
     out[vasitaCatalogKey(sub.slug)] = sub.brands;
   }
   return out;
+}
+
+// Register vasita:<sub> keys (incl. vasita:motorsiklet) for brandCatalogFor lookups.
+for (const sub of VASITA_SUBCATEGORIES) {
+  registerBrandCatalog(vasitaCatalogKey(sub.slug), sub.brands);
 }

@@ -442,6 +442,13 @@ export const CATEGORIES: CategoryDef[] = [
         placeholder: "Türkmenistanlı",
         required: true,
       },
+      {
+        key: "adres",
+        label: "Adres Bilgisi",
+        type: "textarea",
+        placeholder: "Açık adres (ilçe, mahalle, sokak, no)",
+        required: true,
+      },
       { key: "yasAraligi", label: "Yaş Aralığı (bakılan)", type: "text" },
       {
         key: "sertifika",

@@ -6,6 +6,7 @@ import { useAuth } from "@/context/auth-context";
 import { useListings } from "@/context/listings-context";
 import { ListingForm } from "@/components/listings/listing-form";
 import { ListingsError, ListingsLoading } from "@/components/listings/listing-states";
+import { listingEditPath } from "@/lib/listing-path";
 
 export function EditListingClient({ id }: { id: string }) {
   const { user, ready: authReady } = useAuth();
@@ -15,7 +16,7 @@ export function EditListingClient({ id }: { id: string }) {
 
   useEffect(() => {
     if (authReady && !user) {
-      router.replace(`/giris?next=${encodeURIComponent(`/ilan/${id}/duzenle`)}`);
+      router.replace(`/giris?next=${encodeURIComponent(listingEditPath(id))}`);
     }
   }, [authReady, user, router, id]);
 

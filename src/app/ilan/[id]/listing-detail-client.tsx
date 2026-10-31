@@ -23,6 +23,7 @@ import {
   PET_HOTEL_AVAILABILITY,
 } from "@/lib/pet-hotel-availability";
 import { cn } from "@/lib/utils";
+import { listingEditPath } from "@/lib/listing-path";
 import {
   Heart,
   MapPin,
@@ -340,7 +341,7 @@ export function ListingDetailClient({ id }: { id: string }) {
           {canEdit && (
             <div className="flex flex-col gap-2">
               <Button asChild variant="outline">
-                <Link href={`/ilan/${listing.id}/duzenle`}>
+                <Link href={listingEditPath(listing.id)}>
                   <Pencil className="size-4" />
                   İlanı düzenle
                 </Link>

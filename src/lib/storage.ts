@@ -15,8 +15,8 @@ const REMEMBERED_EMAIL_KEY = "harbidenbak.rememberedEmail";
 const PET_HOTEL_APPS_KEY = "harbidenbak.petHotelApplications";
 const CAREGIVER_APPS_KEY = "harbidenbak.caregiverApplications";
 const VERSION_KEY = "harbidenbak.seedVersion";
-/** Bumped for Bakıcı adres bilgisi alanı. */
-const SEED_VERSION = "17";
+/** Bumped for Bakıcı Arayanlar ilan Adres Bilgisi alanı. */
+const SEED_VERSION = "18";
 
 function ensureListingValidity(listing: Listing): Listing {
   if (listing.validUntil) return listing;
@@ -93,7 +93,20 @@ export function loadListings(): Listing[] {
 
 export function saveListings(listings: Listing[]): void {
   if (!canUseStorage()) return;
-  localStorage.setItem(LISTINGS_KEY, JSON.stringify(listings));
+  try {
+    localStorage.setItem(LISTINGS_KEY, JSON.stringify(listings));
+  } catch (err) {
+    const quota =
+      err instanceof DOMException &&
+      (err.name === "QuotaExceededError" || err.code === 22);
+    throw new Error(
+      quota
+        ? "Tarayıcı depolama alanı doldu. Daha küçük kimlik dosyaları deneyin veya eski ilanları silin."
+        : err instanceof Error
+          ? err.message
+          : "İlan kaydedilemedi.",
+    );
+  }
 }
 
 export function loadRememberPreference(): boolean {

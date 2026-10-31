@@ -76,11 +76,27 @@ export const DETAIL_SEARCH_CATEGORIES: CategorySlug[] = [
   "yedek-parca",
 ];
 
+/** Extra catalogs registered by vasita-subcategories (e.g. vasita:motorsiklet). */
+const REGISTERED_CATALOGS: Record<string, BrandCatalog> = {};
+
+export function registerBrandCatalog(key: string, catalog: BrandCatalog): void {
+  REGISTERED_CATALOGS[key] = catalog;
+}
+
 export function brandCatalogFor(category: CategorySlug | string): BrandCatalog | null {
   if (category === "vasita") return VASITA_BRANDS;
   if (category === "motorsiklet") return MOTORSIKLET_BRANDS;
   if (category === "yedek-parca") return YEDEK_PARCA_BRANDS;
+  if (REGISTERED_CATALOGS[category]) return REGISTERED_CATALOGS[category];
+  // Hard fallback so Motorsiklet never resolves to car models via "vasita".
+  if (category === "vasita:motorsiklet") return MOTORSIKLET_BRANDS;
   return null;
+}
+
+/** Models for one brand only — never flattens the whole catalog. */
+export function modelsFromCatalog(catalog: BrandCatalog, brand: string): string[] {
+  if (!brand) return [];
+  return catalog[brand] ?? [];
 }
 
 export function brandNames(category: CategorySlug | string): string[] {
@@ -91,7 +107,7 @@ export function brandNames(category: CategorySlug | string): string[] {
 export function modelsForBrand(category: CategorySlug | string, brand: string): string[] {
   const catalog = brandCatalogFor(category);
   if (!catalog || !brand) return [];
-  return catalog[brand] ?? [];
+  return modelsFromCatalog(catalog, brand);
 }
 
 export function supportsBrandModelSearch(category: CategorySlug | string): boolean {
