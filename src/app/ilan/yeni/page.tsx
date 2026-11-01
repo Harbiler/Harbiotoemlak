@@ -74,6 +74,7 @@ function NewListingWizard() {
 
   const [step, setStep] = useState<Step>("kategori");
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
   const [idBackFile, setIdBackFile] = useState<File | null>(null);
   const [passportFile, setPassportFile] = useState<File | null>(null);
@@ -232,10 +233,11 @@ function NewListingWizard() {
         fields: parsedFields,
         ...(identityDocs ? { identityDocs } : {}),
       });
+      setSuccess(true);
       setStep("yayin");
       setTimeout(() => {
         router.push(listingPath(created.id));
-      }, 900);
+      }, 2000);
     } catch (publishErr) {
       setError(
         publishErr instanceof Error ? publishErr.message : "İlan yayınlanamadı.",
@@ -663,8 +665,9 @@ function NewListingWizard() {
               type="button"
               className="bg-[var(--lagoon)] hover:bg-[#be185d]"
               onClick={publish}
+              disabled={success}
             >
-              Ücretsiz yayınla
+              Kaydet
               <Check className="size-4" />
             </Button>
           </div>
@@ -676,12 +679,15 @@ function NewListingWizard() {
 
       {step === "yayin" && (
         <div className="mt-12 text-center">
-          <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-[var(--lagoon)] text-white">
+          <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-green-600 text-white">
             <Check className="size-7" />
           </div>
-          <h2 className="hb-display mt-4 text-2xl font-bold text-[var(--ink)]">
-            İlan onaylandı
-          </h2>
+          <p
+            className="mt-4 text-center text-base font-semibold text-green-600"
+            role="status"
+          >
+            Başarıyla kaydedildi
+          </p>
           <p className="mt-2 text-[var(--muted-foreground)]">
             {freeListingCopy.detail} Detay sayfasına yönlendiriliyorsunuz…
           </p>

@@ -85,7 +85,7 @@ export default function RegisterPage() {
         )}
         {success && (
           <p className="text-center text-base font-semibold text-green-600" role="status">
-            Başarıyla Kayıt Oldunuz.
+            Başarıyla kaydedildi
           </p>
         )}
 

@@ -162,6 +162,7 @@ export function ListingForm({
   );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
   const [idBackFile, setIdBackFile] = useState<File | null>(null);
   const [passportFile, setPassportFile] = useState<File | null>(null);
@@ -312,10 +313,16 @@ export function ListingForm({
 
       if (listing) {
         updateListing(listing.id, payload);
-        router.push(adminMode ? "/admin" : listingPath(listing.id));
+        setSuccess(true);
+        window.setTimeout(() => {
+          router.push(adminMode ? "/admin" : listingPath(listing.id));
+        }, 2000);
       } else {
         const created = createListing(payload);
-        router.push(listingPath(created.id));
+        setSuccess(true);
+        window.setTimeout(() => {
+          router.push(listingPath(created.id));
+        }, 2000);
       }
     } catch (submitErr) {
       setError(
@@ -332,6 +339,11 @@ export function ListingForm({
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
+      )}
+      {success && (
+        <p className="text-center text-base font-semibold text-green-600" role="status">
+          Başarıyla kaydedildi
+        </p>
       )}
 
       <div className="space-y-4 rounded-xl border border-pink-500/20 bg-[color-mix(in_oklab,#fff7fa_90%,#fce7f0)] p-5">
@@ -623,8 +635,12 @@ export function ListingForm({
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Button type="submit" disabled={saving} className="bg-[var(--lagoon)] hover:bg-[#be185d]">
-          {listing ? "Kaydet" : "Ücretsiz yayınla"}
+        <Button
+          type="submit"
+          disabled={saving || success}
+          className="bg-[var(--lagoon)] hover:bg-[#be185d]"
+        >
+          Kaydet
         </Button>
         <Button type="button" variant="outline" onClick={() => router.back()}>
           Vazgeç
