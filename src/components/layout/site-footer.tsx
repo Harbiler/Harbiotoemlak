@@ -82,7 +82,18 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-white/10 py-4 text-center text-xs text-white/40">
-        © 2026 Harbiden Bak · Tüm hakları saklıdır · Veriler tarayıcınızda saklanır
+        <p>© 2026 Harbiden Bak · Tüm hakları saklıdır · Veriler tarayıcınızda saklanır</p>
+        <p className="mt-1.5 space-x-3">
+          <Link href="/" className="text-white/55 transition hover:text-white">
+            Modern görünüm
+          </Link>
+          <span aria-hidden className="text-white/25">
+            ·
+          </span>
+          <Link href="/eski" className="text-white/55 transition hover:text-white">
+            Klasik görünüm
+          </Link>
+        </p>
       </div>
     </footer>
   );

@@ -35,50 +35,65 @@ export function CategoryGrid() {
 
   return (
     <section
-      className="mx-auto max-w-6xl px-4 pt-4 pb-12 sm:px-6 sm:pb-14"
+      className="hb-perspective-stage relative mx-auto max-w-6xl px-4 pt-2 pb-14 sm:px-6 sm:pb-16"
       data-hb-home-categories="photos"
+      data-hb-home-style="depth-3d"
     >
-      <ul className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3 lg:grid-cols-4 animate-[fadeUp_0.7s_ease-out_0.05s_both]">
-        {NAV_CATEGORIES.map((c) => {
+      <ul className="hb-tile-scene grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:gap-5 animate-[fadeUp_0.7s_ease-out_0.05s_both]">
+        {NAV_CATEGORIES.map((c, i) => {
           const src =
             categoryImagePath(c.slug, overrides) ??
             defaultCategoryImagePath(c.slug);
           const isOverride = Boolean(overrides[c.slug]);
           return (
-            <li key={c.slug}>
+            <li
+              key={c.slug}
+              className="hb-tile-item"
+              style={{ animationDelay: `${0.04 + i * 0.03}s` }}
+            >
               <Link
                 href={`/kategori/${c.slug}`}
-                className="group flex items-start gap-3 rounded-xl p-2 transition duration-300 hover:bg-white/70"
+                className="hb-depth-tile group block h-full rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--lagoon)] focus-visible:ring-offset-2"
                 data-hb-category={c.slug}
                 data-hb-category-image={isOverride ? "custom" : "default"}
               >
-                <span className="relative size-14 shrink-0 overflow-hidden rounded-xl bg-[color-mix(in_oklab,var(--ink)_8%,white)] ring-1 ring-[color-mix(in_oklab,var(--ink)_8%,transparent)] transition duration-300 group-hover:scale-105 group-hover:shadow-md sm:size-16">
-                  {src ? (
-                    <Image
-                      src={src}
-                      alt=""
-                      fill
-                      sizes="64px"
-                      className="object-cover"
-                      unoptimized
-                    />
-                  ) : (
+                <span className="hb-depth-tile__face relative flex h-full flex-col overflow-hidden rounded-2xl bg-white">
+                  <span className="relative aspect-[5/4] w-full overflow-hidden bg-[color-mix(in_oklab,var(--ink)_8%,white)]">
+                    {src ? (
+                      <Image
+                        src={src}
+                        alt=""
+                        fill
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 240px"
+                        className="object-cover transition duration-500 ease-out group-hover:scale-[1.06]"
+                        unoptimized
+                      />
+                    ) : (
+                      <span
+                        className="flex size-full items-center justify-center text-white"
+                        style={{ backgroundColor: c.accent }}
+                      >
+                        <CategoryIcon slug={c.slug} className="size-8" />
+                      </span>
+                    )}
                     <span
-                      className="flex size-full items-center justify-center text-white"
-                      style={{ backgroundColor: c.accent }}
-                    >
-                      <CategoryIcon slug={c.slug} className="size-6" />
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_42%,rgba(74,24,48,0.55)_100%)] opacity-80 transition duration-500 group-hover:opacity-90"
+                    />
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-x-0 top-0 h-1/3 bg-[linear-gradient(180deg,rgba(255,255,255,0.28),transparent)]"
+                    />
+                  </span>
+                  <span className="relative z-[1] flex flex-1 flex-col gap-1 px-3.5 py-3 sm:px-4 sm:py-3.5">
+                    <span className="hb-display text-[15px] font-bold leading-snug text-[var(--ink)] transition duration-300 group-hover:text-[var(--lagoon)] sm:text-base">
+                      {c.name}
                     </span>
-                  )}
+                    <span className="line-clamp-2 text-[11px] leading-relaxed text-[var(--muted-foreground)] sm:text-xs">
+                      {c.description}
+                    </span>
+                  </span>
                 </span>
-                <div className="min-w-0 pt-0.5">
-                  <p className="font-semibold text-[var(--ink)] group-hover:text-[var(--lagoon)]">
-                    {c.name}
-                  </p>
-                  <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-[var(--muted-foreground)]">
-                    {c.description}
-                  </p>
-                </div>
               </Link>
             </li>
           );
