@@ -55,7 +55,19 @@ export const MOTORSIKLET_BRANDS: BrandCatalog = {
   Piaggio: ["Medley 125", "Beverly 300", "MP3 300", "Liberty 125"],
   CFMoto: ["300NK", "450NK", "700CL-X", "800MT"],
   Bajaj: ["Pulsar NS200", "Dominar 400", "Chetak"],
-  TVS: ["Apache RTR 200", "Ntorq 125", "iQube"],
+  // Keep a full TR-market TVS lineup — empty/partial maps make Model look broken in create + search.
+  TVS: [
+    "Apache RTR 160",
+    "Apache RTR 180",
+    "Apache RTR 200",
+    "Apache RR 310",
+    "Ntorq 125",
+    "Raider 125",
+    "Jupiter 125",
+    "iQube",
+    "Sport 100",
+    "Wego 110",
+  ],
   Mondial: ["100 MG", "125 Drift", "Scooty 50", "X-Treme 250"],
   RKS: ["125S", "Blazer 50", "Titanic 150"],
   Kanuni: ["Seyhan 125", "Tro 125", "Windy 50"],
@@ -93,10 +105,39 @@ export function brandCatalogFor(category: CategorySlug | string): BrandCatalog |
   return null;
 }
 
+/**
+ * Resolve a user/URL brand string to the canonical catalog key.
+ * Exact match first, then Turkish case-insensitive (TVS / Tvs / tvs).
+ * Also accepts common suffixes ("TVS Motor" → TVS).
+ */
+export function resolveCatalogBrand(
+  catalog: BrandCatalog,
+  brand: string,
+): string | undefined {
+  const raw = brand?.trim();
+  if (!raw) return undefined;
+  if (catalog[raw]) return raw;
+
+  const lower = raw.toLocaleLowerCase("tr");
+  const keys = Object.keys(catalog);
+  const exactCi = keys.find((k) => k.toLocaleLowerCase("tr") === lower);
+  if (exactCi) return exactCi;
+
+  // "TVS Motor", "TVS Motors" → TVS
+  const stripped = lower.replace(/\s+(motor|motors|motosiklet|moto)s?$/i, "").trim();
+  if (stripped && stripped !== lower) {
+    const viaSuffix = keys.find((k) => k.toLocaleLowerCase("tr") === stripped);
+    if (viaSuffix) return viaSuffix;
+  }
+
+  return undefined;
+}
+
 /** Models for one brand only — never flattens the whole catalog. */
 export function modelsFromCatalog(catalog: BrandCatalog, brand: string): string[] {
   if (!brand) return [];
-  return catalog[brand] ?? [];
+  const key = resolveCatalogBrand(catalog, brand);
+  return key ? (catalog[key] ?? []) : [];
 }
 
 export function brandNames(category: CategorySlug | string): string[] {

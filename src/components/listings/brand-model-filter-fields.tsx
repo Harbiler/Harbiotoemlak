@@ -4,6 +4,7 @@ import { useEffect, useId, useRef } from "react";
 import {
   brandCatalogFor,
   modelsFromCatalog,
+  resolveCatalogBrand,
   sortedBrandNames,
   type BrandCatalog,
 } from "@/lib/brand-models";
@@ -58,7 +59,11 @@ export function BrandModelFilterFields({
     brandCatalogFor(category) ??
     {};
   const brands = sortedBrandNames(resolvedCatalog);
-  const normalizedMarka = isHepsi(marka) ? HEPSI : marka;
+  const canonicalMarka =
+    !isHepsi(marka) && marka
+      ? (resolveCatalogBrand(resolvedCatalog, marka) ?? marka)
+      : marka;
+  const normalizedMarka = isHepsi(canonicalMarka) ? HEPSI : canonicalMarka;
   const normalizedModel = isHepsi(model) ? HEPSI : model;
   const modelsForMarka =
     normalizedMarka !== HEPSI
@@ -72,7 +77,12 @@ export function BrandModelFilterFields({
     if (!brandSelect || !modelSelect) return;
 
     const onBrand = () => {
-      markaCb.current(brandSelect.value || HEPSI);
+      const raw = brandSelect.value || HEPSI;
+      if (isHepsi(raw)) {
+        markaCb.current(HEPSI);
+        return;
+      }
+      markaCb.current(resolveCatalogBrand(resolvedCatalog, raw) ?? raw);
     };
     const onModel = () => {
       modelCb.current(
@@ -145,6 +155,7 @@ export function BrandModelFilterFields({
           ref={modelRef}
           data-slot="native-select"
           data-hb-role="model"
+          data-hb-model-count={modelsForMarka.length}
           className={selectClassName}
           defaultValue={
             modelsForMarka.includes(normalizedModel)

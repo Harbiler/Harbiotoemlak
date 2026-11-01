@@ -420,9 +420,14 @@ export function ListingForm({
             <Select
               value={form.city}
               onValueChange={(city) => {
-                const c = city ?? form.city;
-                const first = CITIES[c]?.[0] ?? "";
-                setForm({ ...form, city: c, district: first });
+                setForm((f) => {
+                  const c = city ?? f.city;
+                  return {
+                    ...f,
+                    city: c,
+                    district: CITIES[c]?.[0] ?? "",
+                  };
+                });
               }}
               items={Object.fromEntries(CITY_NAMES.map((c) => [c, c]))}
             >
@@ -443,7 +448,10 @@ export function ListingForm({
             <Select
               value={form.district}
               onValueChange={(district) =>
-                setForm({ ...form, district: district ?? form.district })
+                setForm((f) => ({
+                  ...f,
+                  district: district ?? f.district,
+                }))
               }
               items={Object.fromEntries(districts.map((d) => [d, d]))}
             >

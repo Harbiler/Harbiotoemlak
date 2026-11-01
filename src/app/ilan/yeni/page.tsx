@@ -103,9 +103,11 @@ function NewListingWizard() {
   }, [ready, user, router]);
 
   // URL ?kategori= / &alt= (e.g. Motorsiklet) → jump to form; Vasıta may still need alt.
+  // Never clobber an advanced step (onizleme / yayin) if this effect re-fires
+  // after a remount / Strict Mode / Suspense replay — that aborted preview nav.
   useEffect(() => {
     if (draft.category && getCategory(draft.category)) {
-      setStep("form");
+      setStep((s) => (s === "kategori" ? "form" : s));
     }
     // Only on mount / preset — do not re-run when user goes back to kategori.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -124,6 +126,11 @@ function NewListingWizard() {
   const category = draft.category ? getCategory(draft.category) : undefined;
   const districts = CITIES[draft.city] ?? [];
   const stepIndex = STEPS.findIndex((s) => s.id === step);
+
+  /** Functional field write — avoids stale closures wiping marka/model mid-form. */
+  function setDraftField(key: string, value: string) {
+    setDraft((d) => ({ ...d, fields: { ...d.fields, [key]: value } }));
+  }
 
   const previewListing = useMemo(() => {
     if (!draft.category || !user) return null;
@@ -176,6 +183,19 @@ function NewListingWizard() {
       }
     }
     return null;
+  }
+
+  function goToPreview() {
+    const err = validateForm();
+    if (err) {
+      setError(err);
+      return;
+    }
+    setError(null);
+    setStep("onizleme");
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }
 
   async function publish() {
@@ -359,7 +379,9 @@ function NewListingWizard() {
                 id="title"
                 className="mt-1.5"
                 value={draft.title}
-                onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, title: e.target.value }))
+                }
               />
             </div>
             <div>
@@ -369,7 +391,9 @@ function NewListingWizard() {
                 className="mt-1.5"
                 rows={5}
                 value={draft.description}
-                onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, description: e.target.value }))
+                }
               />
             </div>
             <div>
@@ -379,7 +403,9 @@ function NewListingWizard() {
                 type="number"
                 className="mt-1.5"
                 value={draft.price}
-                onChange={(e) => setDraft({ ...draft, price: e.target.value })}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, price: e.target.value }))
+                }
                 placeholder="0 = fiyat sorulur"
               />
             </div>
@@ -389,8 +415,14 @@ function NewListingWizard() {
                 <Select
                   value={draft.city}
                   onValueChange={(city) => {
-                    const c = city ?? draft.city;
-                    setDraft({ ...draft, city: c, district: CITIES[c]?.[0] ?? "" });
+                    setDraft((d) => {
+                      const c = city ?? d.city;
+                      return {
+                        ...d,
+                        city: c,
+                        district: CITIES[c]?.[0] ?? "",
+                      };
+                    });
                   }}
                   items={Object.fromEntries(CITY_NAMES.map((c) => [c, c]))}
                 >
@@ -411,7 +443,10 @@ function NewListingWizard() {
                 <Select
                   value={draft.district}
                   onValueChange={(district) =>
-                    setDraft({ ...draft, district: district ?? draft.district })
+                    setDraft((d) => ({
+                      ...d,
+                      district: district ?? d.district,
+                    }))
                   }
                   items={Object.fromEntries(districts.map((d) => [d, d]))}
                 >
@@ -439,15 +474,17 @@ function NewListingWizard() {
                   <Select
                     value={draft.fields.altKategori || undefined}
                     onValueChange={(v) =>
-                      setDraft({
-                        ...draft,
+                      // Functional update — stale draft during remount/race must not
+                      // resurrect an old marka/model after alt kategori changes.
+                      setDraft((d) => ({
+                        ...d,
                         fields: {
-                          ...draft.fields,
+                          ...d.fields,
                           altKategori: v ?? "",
                           marka: "",
                           model: "",
                         },
-                      })
+                      }))
                     }
                     items={Object.fromEntries(
                       VASITA_SUBCATEGORIES.map((s) => [s.slug, s.name]),
@@ -515,10 +552,7 @@ function NewListingWizard() {
                         <Select
                           value={draft.fields[field.key] || undefined}
                           onValueChange={(v) =>
-                            setDraft({
-                              ...draft,
-                              fields: { ...draft.fields, [field.key]: v ?? "" },
-                            })
+                            setDraftField(field.key, v ?? "")
                           }
                           items={Object.fromEntries(
                             field.options.map((o) => [o, o]),
@@ -541,13 +575,7 @@ function NewListingWizard() {
                           placeholder={field.placeholder}
                           rows={3}
                           onChange={(e) =>
-                            setDraft({
-                              ...draft,
-                              fields: {
-                                ...draft.fields,
-                                [field.key]: e.target.value,
-                              },
-                            })
+                            setDraftField(field.key, e.target.value)
                           }
                         />
                       ) : (
@@ -556,10 +584,7 @@ function NewListingWizard() {
                           value={draft.fields[field.key] ?? ""}
                           placeholder={field.placeholder}
                           onChange={(e) =>
-                            setDraft({
-                              ...draft,
-                              fields: { ...draft.fields, [field.key]: e.target.value },
-                            })
+                            setDraftField(field.key, e.target.value)
                           }
                         />
                       )}
@@ -588,7 +613,9 @@ function NewListingWizard() {
                 id="cname"
                 className="mt-1.5"
                 value={draft.contactName}
-                onChange={(e) => setDraft({ ...draft, contactName: e.target.value })}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, contactName: e.target.value }))
+                }
               />
             </div>
             <div>
@@ -597,7 +624,9 @@ function NewListingWizard() {
                 id="cphone"
                 className="mt-1.5"
                 value={draft.contactPhone}
-                onChange={(e) => setDraft({ ...draft, contactPhone: e.target.value })}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, contactPhone: e.target.value }))
+                }
               />
             </div>
           </div>
@@ -610,14 +639,7 @@ function NewListingWizard() {
             <Button
               type="button"
               className="bg-[var(--lagoon)] hover:bg-[#be185d]"
-              onClick={() => {
-                const err = validateForm();
-                if (err) setError(err);
-                else {
-                  setError(null);
-                  setStep("onizleme");
-                }
-              }}
+              onClick={goToPreview}
             >
               Önizlemeye geç
               <ArrowRight className="size-4" />
@@ -626,8 +648,8 @@ function NewListingWizard() {
         </div>
       )}
 
-      {step === "onizleme" && previewListing && draft.category && (
-        <div className="mt-8 space-y-6">
+      {step === "onizleme" && draft.category && (
+        <div className="mt-8 space-y-6" data-hb-step="onizleme">
           <div className="hb-surface overflow-hidden">
             <PhotoPlaceholder
               category={draft.category}
@@ -637,7 +659,7 @@ function NewListingWizard() {
             />
             <div className="space-y-3 p-5">
               <div className="flex flex-wrap items-center gap-2">
-                <SellerBadge listing={previewListing} />
+                {previewListing && <SellerBadge listing={previewListing} />}
                 <span className="text-sm text-[var(--muted-foreground)]">
                   {draft.city} / {draft.district}
                 </span>
@@ -667,7 +689,7 @@ function NewListingWizard() {
               onClick={publish}
               disabled={success}
             >
-              Kaydet
+              Kaydet ve yayınla
               <Check className="size-4" />
             </Button>
           </div>
@@ -686,7 +708,7 @@ function NewListingWizard() {
             className="mt-4 text-center text-base font-semibold text-green-600"
             role="status"
           >
-            Başarıyla kaydedildi
+            İlanınız Kontrol edildikten sonra yayınlanacaktır
           </p>
           <p className="mt-2 text-[var(--muted-foreground)]">
             {freeListingCopy.detail} Detay sayfasına yönlendiriliyorsunuz…

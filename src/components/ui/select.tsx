@@ -5,7 +5,18 @@ import { Select as SelectPrimitive } from "@base-ui/react/select"
 import { cn } from "cn"
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
 
-const Select = SelectPrimitive.Root
+/**
+ * Default modal={false}: Base UI's modal select sets pointer-events:none on
+ * the rest of the document while open (and can leave the page inert if a
+ * popup fails to close). That blocked "Önizlemeye geç" / submit across
+ * listing forms. Opt into modal with modal={true} where needed.
+ */
+function Select({
+  modal = false,
+  ...props
+}: SelectPrimitive.Root.Props<any, any>) {
+  return <SelectPrimitive.Root modal={modal} {...props} />
+}
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (
