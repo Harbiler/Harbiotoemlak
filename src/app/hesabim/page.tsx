@@ -196,16 +196,25 @@ export default function AccountPage() {
                           ? "default"
                           : l.status === "pending"
                             ? "secondary"
-                            : "outline"
+                            : l.status === "rejected"
+                              ? "destructive"
+                              : "outline"
                       }
                     >
                       {l.status === "approved"
                         ? "Yayında"
                         : l.status === "pending"
                           ? "Onay bekliyor"
-                          : "Gizli"}
+                          : l.status === "rejected"
+                            ? "Reddedildi"
+                            : "Gizli"}
                     </Badge>
                   </div>
+                  {l.status === "rejected" && l.rejectReason && (
+                    <p className="rounded-md border border-red-200 bg-red-50 px-2 py-1.5 text-xs text-red-800">
+                      İlanınız şu neden ile yayınlanamadı: {l.rejectReason}
+                    </p>
+                  )}
                   {availability && (
                     <div className="hb-surface flex items-center gap-2 p-2">
                       <p className="mr-auto text-xs font-medium text-[var(--muted-foreground)]">

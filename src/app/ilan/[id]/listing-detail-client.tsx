@@ -22,6 +22,7 @@ import {
   isPetHotelListing,
   PET_HOTEL_AVAILABILITY,
 } from "@/lib/pet-hotel-availability";
+import { photoSlotCountForCategory } from "@/lib/listing-photos";
 import { cn } from "@/lib/utils";
 import { listingEditPath } from "@/lib/listing-path";
 import {
@@ -120,11 +121,26 @@ export function ListingDetailClient({ id }: { id: string }) {
       )}
 
       {listing.status !== "approved" && (
-        <Alert className="mb-6">
+        <Alert
+          className={
+            listing.status === "rejected"
+              ? "mb-6 border-red-300 bg-red-50"
+              : "mb-6"
+          }
+        >
           <AlertTitle>
-            Durum: {listing.status === "pending" ? "Beklemede" : "Gizli"}
+            Durum:{" "}
+            {listing.status === "pending"
+              ? "Beklemede"
+              : listing.status === "rejected"
+                ? "Reddedildi"
+                : "Gizli"}
           </AlertTitle>
-          <AlertDescription>Bu ilanı yalnızca siz ve yöneticiler görebilir.</AlertDescription>
+          <AlertDescription>
+            {listing.status === "rejected" && listing.rejectReason
+              ? `İlanınız şu neden ile yayınlanamadı: ${listing.rejectReason}`
+              : "Bu ilanı yalnızca siz ve yöneticiler görebilir."}
+          </AlertDescription>
         </Alert>
       )}
 
@@ -152,9 +168,10 @@ export function ListingDetailClient({ id }: { id: string }) {
             large
             className="aspect-[16/10] w-full rounded-2xl"
             key={photos[activePhoto]}
+            src={photos[activePhoto]}
           />
           <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-5">
-            {photos.slice(0, 5).map((p, i) => (
+            {photos.slice(0, photoSlotCountForCategory(listing.category)).map((p, i) => (
               <button
                 key={`${p}-${i}`}
                 type="button"
@@ -166,6 +183,7 @@ export function ListingDetailClient({ id }: { id: string }) {
                 <PhotoPlaceholder
                   category={listing.category}
                   className="aspect-video"
+                  src={p}
                 />
               </button>
             ))}

@@ -8,6 +8,15 @@ import { useListings } from "@/context/listings-context";
 import { getCategory, CATEGORIES } from "@/lib/categories";
 import { formatDateShort, formatPrice } from "@/lib/format";
 import { freeListingCopy } from "@/lib/listing-validity";
+import {
+  isPaymentDue,
+  listingsForSellerKind,
+  markListingFreePatch,
+  markListingPaidPatch,
+  paymentAdminCopy,
+  paymentStatusLabel,
+  resolvePaymentStatus,
+} from "@/lib/listing-payment";
 import { listingEditPath, listingPath } from "@/lib/listing-path";
 import {
   approvePendingCaregiverApplications,
@@ -62,8 +71,10 @@ import {
   ShieldOff,
   Trash2,
 } from "lucide-react";
+import { CategoryImagesPanel } from "@/components/admin/category-images-panel";
 
 type MemberGroup = "all" | "bireysel" | "kurumsal" | "bakici";
+type PaymentView = "due" | "all";
 
 function membershipLabel(u: User): string {
   if (u.membershipKind === "kurumsal") {
@@ -136,6 +147,7 @@ export default function AdminPage() {
     listings,
     ready: listingsReady,
     setStatus,
+    updateListing,
     deleteListing,
     resetData,
   } = useListings();
@@ -145,6 +157,8 @@ export default function AdminPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>(HEPSI);
   const [userQ, setUserQ] = useState("");
   const [memberGroup, setMemberGroup] = useState<MemberGroup>("all");
+  const [paymentView, setPaymentView] = useState<PaymentView>("due");
+  const [paymentQ, setPaymentQ] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Listing | null>(null);
   const [userDelete, setUserDelete] = useState<User | null>(null);
   const [caregiverDelete, setCaregiverDelete] =
@@ -159,6 +173,7 @@ export default function AdminPage() {
     pending: "Onay bekliyor",
     approved: "Yayında",
     hidden: "Gizli",
+    rejected: "Reddedildi",
   };
 
   const categoryItems = useMemo(() => {
@@ -214,9 +229,134 @@ export default function AdminPage() {
   const bireyselCount = users.filter((u) => u.membershipKind === "bireysel").length;
   const kurumsalCount = users.filter((u) => u.membershipKind === "kurumsal").length;
 
+  const paymentListings = useMemo(() => {
+    return listings.filter((l) => {
+      if (paymentView === "due" && !isPaymentDue(l)) return false;
+      return listingMatchesQuery(l, paymentQ);
+    });
+  }, [listings, paymentView, paymentQ]);
+
+  const bireyselPayments = useMemo(
+    () => listingsForSellerKind(paymentListings, "bireysel"),
+    [paymentListings],
+  );
+  const kurumsalPayments = useMemo(
+    () => listingsForSellerKind(paymentListings, "kurumsal"),
+    [paymentListings],
+  );
+
+  const dueCount = listings.filter((l) => isPaymentDue(l)).length;
+  const paidCount = listings.filter(
+    (l) => resolvePaymentStatus(l) === "paid",
+  ).length;
+  const freeCount = listings.filter(
+    (l) => resolvePaymentStatus(l) === "free",
+  ).length;
+
   function toggleRestrict(u: User) {
     if (u.id === user?.id) return;
     updateUser(u.id, { restricted: !u.restricted });
+  }
+
+  function markFree(l: Listing) {
+    updateListing(l.id, markListingFreePatch());
+  }
+
+  function markPaid(l: Listing) {
+    updateListing(l.id, markListingPaidPatch());
+  }
+
+  function renderPaymentRows(rows: Listing[]) {
+    if (rows.length === 0) {
+      return (
+        <TableRow>
+          <TableCell
+            colSpan={5}
+            className="py-8 text-center text-sm text-stone-500"
+          >
+            {paymentView === "due"
+              ? paymentAdminCopy.emptyDue
+              : "Bu grupta ilan yok."}
+          </TableCell>
+        </TableRow>
+      );
+    }
+    return rows.map((l) => {
+      const pay = resolvePaymentStatus(l);
+      return (
+        <TableRow
+          key={l.id}
+          className={pay === "due" ? "bg-amber-50/70" : undefined}
+        >
+          <TableCell>
+            <Link
+              href={listingPath(l.id)}
+              className="font-medium text-pink-950 hover:underline"
+            >
+              {l.title}
+            </Link>
+            <p className="text-xs text-stone-500">
+              {listingNumber(l.id)} · {l.city}/{l.district} · {l.contactName}
+            </p>
+          </TableCell>
+          <TableCell className="text-sm">
+            {getCategory(l.category)?.shortName}
+          </TableCell>
+          <TableCell className="text-xs text-stone-600">
+            <span
+              className={
+                pay === "due"
+                  ? "font-medium text-amber-800"
+                  : pay === "paid"
+                    ? "font-medium text-emerald-700"
+                    : "font-medium text-[var(--lagoon)]"
+              }
+            >
+              {paymentStatusLabel(pay)}
+            </span>
+            <br />
+            {l.validUntil ? formatDateShort(l.validUntil) : "—"}
+            {l.paidAt && (
+              <>
+                <br />
+                <span className="text-stone-400">
+                  Ödeme: {formatDateShort(l.paidAt)}
+                </span>
+              </>
+            )}
+          </TableCell>
+          <TableCell className="text-sm">{formatPrice(l.price)}</TableCell>
+          <TableCell className="text-right">
+            <div className="flex flex-wrap justify-end gap-1">
+              <Button
+                size="sm"
+                variant={pay === "free" ? "default" : "outline"}
+                className={
+                  pay === "free"
+                    ? "bg-[var(--lagoon)] hover:bg-[#be185d]"
+                    : undefined
+                }
+                onClick={() => markFree(l)}
+              >
+                {paymentAdminCopy.freeButton}
+              </Button>
+              <Button
+                size="sm"
+                variant={pay === "paid" ? "default" : "outline"}
+                className={
+                  pay === "paid"
+                    ? "bg-emerald-700 hover:bg-emerald-800"
+                    : undefined
+                }
+                onClick={() => markPaid(l)}
+              >
+                {paymentAdminCopy.paidButton}
+              </Button>
+            </div>
+          </TableCell>
+        </TableRow>
+      );
+    });
   }
 
   if (!ready || !user || user.role !== "admin") {
@@ -287,6 +427,12 @@ export default function AdminPage() {
       <Tabs defaultValue="listings" className="mt-8">
         <TabsList>
           <TabsTrigger value="listings">İlanlar</TabsTrigger>
+          <TabsTrigger value="payments">
+            Ödemeler
+            {dueCount > 0 && (
+              <Badge className="ml-1 bg-amber-600">{dueCount}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="users">Üyeler</TabsTrigger>
           <TabsTrigger value="pet-hotels">
             Pet otel başvuruları
@@ -304,6 +450,7 @@ export default function AdminPage() {
               </Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="category-images">Ana sayfa resimleri</TabsTrigger>
         </TabsList>
 
         <TabsContent value="listings" className="mt-4 space-y-4">
@@ -391,7 +538,12 @@ export default function AdminPage() {
                         <Select
                           value={l.status}
                           onValueChange={(v) => {
-                            if (v === "pending" || v === "approved" || v === "hidden") {
+                            if (
+                              v === "pending" ||
+                              v === "approved" ||
+                              v === "hidden" ||
+                              v === "rejected"
+                            ) {
                               setStatus(l.id, v);
                             }
                           }}
@@ -399,6 +551,7 @@ export default function AdminPage() {
                             pending: "Onay bekliyor",
                             approved: "Yayında",
                             hidden: "Gizli",
+                            rejected: "Reddedildi",
                           }}
                         >
                           <SelectTrigger className="h-8 w-[140px]">
@@ -408,12 +561,26 @@ export default function AdminPage() {
                             <SelectItem value="pending">Onay bekliyor</SelectItem>
                             <SelectItem value="approved">Yayında</SelectItem>
                             <SelectItem value="hidden">Gizli</SelectItem>
+                            <SelectItem value="rejected">Reddedildi</SelectItem>
                           </SelectContent>
                         </Select>
+                        {l.status === "rejected" && l.rejectReason && (
+                          <p className="mt-1 max-w-[160px] text-[10px] leading-snug text-red-700">
+                            {l.rejectReason}
+                          </p>
+                        )}
                       </TableCell>
                       <TableCell className="text-xs text-stone-600">
-                        <span className="font-medium text-[var(--lagoon)]">
-                          Ücretsiz
+                        <span
+                          className={
+                            resolvePaymentStatus(l) === "due"
+                              ? "font-medium text-amber-800"
+                              : resolvePaymentStatus(l) === "paid"
+                                ? "font-medium text-emerald-700"
+                                : "font-medium text-[var(--lagoon)]"
+                          }
+                        >
+                          {paymentStatusLabel(resolvePaymentStatus(l))}
                         </span>
                         <br />
                         {l.validUntil ? formatDateShort(l.validUntil) : "—"}
@@ -475,6 +642,115 @@ export default function AdminPage() {
                 </TableBody>
               </Table>
             </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="payments" className="mt-4 space-y-6">
+          <p className="max-w-2xl text-sm text-stone-600">
+            {paymentAdminCopy.tabNote}
+          </p>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="hb-surface p-4">
+              <p className="text-xs text-stone-500">Vadesi gelen / bekleyen</p>
+              <p className="text-2xl font-bold text-amber-700">{dueCount}</p>
+            </div>
+            <div className="hb-surface p-4">
+              <p className="text-xs text-stone-500">Ücretsiz dönem</p>
+              <p className="text-2xl font-bold text-[var(--lagoon)]">
+                {freeCount}
+              </p>
+            </div>
+            <div className="hb-surface p-4">
+              <p className="text-xs text-stone-500">Ücretli işaretli</p>
+              <p className="text-2xl font-bold text-emerald-700">{paidCount}</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Input
+              placeholder="İlan ara (başlık, no, şehir)…"
+              value={paymentQ}
+              onChange={(e) => setPaymentQ(e.target.value)}
+              className="max-w-sm"
+              aria-label="Ödeme ilanı ara"
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant={paymentView === "due" ? "default" : "outline"}
+                className={
+                  paymentView === "due"
+                    ? "bg-amber-600 hover:bg-amber-700"
+                    : undefined
+                }
+                onClick={() => setPaymentView("due")}
+              >
+                Bekleyen / vadesi gelen ({dueCount})
+              </Button>
+              <Button
+                size="sm"
+                variant={paymentView === "all" ? "default" : "outline"}
+                className={
+                  paymentView === "all"
+                    ? "bg-[var(--lagoon)] hover:bg-[#be185d]"
+                    : undefined
+                }
+                onClick={() => setPaymentView("all")}
+              >
+                Tümü ({listings.length})
+              </Button>
+            </div>
+          </div>
+
+          {!listingsReady ? (
+            <ListingsLoading />
+          ) : (
+            <>
+              <div className="space-y-2">
+                <h2 className="text-sm font-semibold text-[var(--ink)]">
+                  Bireysel ({bireyselPayments.length})
+                </h2>
+                <div className="overflow-x-auto hb-surface">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>İlan</TableHead>
+                        <TableHead>Kategori</TableHead>
+                        <TableHead>Ödeme / süre</TableHead>
+                        <TableHead>Fiyat</TableHead>
+                        <TableHead className="text-right">İşaretle</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {renderPaymentRows(bireyselPayments)}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h2 className="text-sm font-semibold text-[var(--ink)]">
+                  Kurumsal ({kurumsalPayments.length})
+                </h2>
+                <div className="overflow-x-auto hb-surface">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>İlan</TableHead>
+                        <TableHead>Kategori</TableHead>
+                        <TableHead>Ödeme / süre</TableHead>
+                        <TableHead>Fiyat</TableHead>
+                        <TableHead className="text-right">İşaretle</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {renderPaymentRows(kurumsalPayments)}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </>
           )}
         </TabsContent>
 
@@ -857,6 +1133,10 @@ export default function AdminPage() {
               </TableBody>
             </Table>
           </div>
+        </TabsContent>
+
+        <TabsContent value="category-images" className="mt-4">
+          <CategoryImagesPanel />
         </TabsContent>
 
         <TabsContent value="caregivers" className="mt-4">

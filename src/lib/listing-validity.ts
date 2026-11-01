@@ -37,5 +37,5 @@ export const freeListingCopy = {
   publishHint:
     "Yeni ilanlar otomatik onaylanır; yayın ücretsizdir. Ücretli paket gerekmez.",
   adminNote:
-    "Tüm ilanlar ücretsiz yayınlanır. Geçerlilik, yayın / onay tarihinden itibaren hesaplanır.",
+    "Tüm ilanlar ücretsiz yayınlanır. Geçerlilik, yayın / onay tarihinden itibaren hesaplanır. Ödemeler sekmesinden Ücretsiz / Ücretli işaretleyebilirsiniz.",
 } as const;

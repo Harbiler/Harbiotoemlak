@@ -43,6 +43,7 @@ export function ListingCard({
           category={listing.category}
           title={listing.title}
           className="aspect-[16/10] w-full transition duration-500 ease-out group-hover:scale-[1.03]"
+          src={listing.photos[0]}
         />
         {listing.featured && (
           <span className="absolute bottom-2 left-2 rounded-md bg-[var(--lagoon)]/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">

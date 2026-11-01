@@ -1,7 +1,9 @@
 export type MembershipKind = "bireysel" | "kurumsal";
 export type KurumsalType = "galeri" | "emlak";
 export type UserRole = "user" | "admin";
-export type ListingStatus = "pending" | "approved" | "hidden";
+export type ListingStatus = "pending" | "approved" | "hidden" | "rejected";
+/** Admin ödemeler: ücretsiz dönem, ücret ödendi, veya vadesi geldi. */
+export type ListingPaymentStatus = "free" | "paid" | "due";
 export type SellerBadge = "bireysel" | "galeri" | "emlak";
 
 export type CategorySlug =
@@ -15,6 +17,7 @@ export type CategorySlug =
   | "evcil-hayvan-otelleri"
   | "yardimci-arayanlar"
   | "bakici-arayanlar"
+  | "toptancilar"
   | "ozel-ders"
   | "is-ilanlari";
 
@@ -64,12 +67,23 @@ export interface Listing {
   updatedAt: string;
   /** Yayın geçerlilik bitişi (ISO). Yeni ilanlar yayın tarihinden itibaren 1 yıl ücretsiz. */
   validUntil: string;
+  /**
+   * Ödeme durumu (admin Ödemeler). Yoksa açılış kuralı: `validUntil` dolana kadar ücretsiz.
+   * `due` = ücretsiz süre bitti / ödeme bekliyor; `paid` = ücretli işaretlendi.
+   */
+  paymentStatus?: ListingPaymentStatus;
+  /** Admin “Ücretli” işaretlediğinde (ISO). */
+  paidAt?: string;
   fields: Record<string, string | number | boolean>;
   /**
    * Kimlik ön/arka veya pasaport (localStorage data URL).
    * Bakıcı Arayanlar ilanlarında zorunlu; genel ilan özelliklerinde gösterilmez.
    */
   identityDocs?: ListingIdentityDocs;
+  /** Otomatik içerik denetimi red gerekçesi (müstehcenlik / çıplaklık vb.). */
+  rejectReason?: string;
+  /** Son otomatik görsel denetimi zamanı (ISO). */
+  moderatedAt?: string;
 }
 
 export interface AuthSession {

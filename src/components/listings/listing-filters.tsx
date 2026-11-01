@@ -135,20 +135,25 @@ export function ListingFilters({
     !!vasitaSubDef;
 
   const extraSelectFields =
-    category && showDetailed && categorySlug === "yedek-parca"
-      ? category.fields.filter(
-          (f) => f.type === "select" && f.key !== "marka" && f.key !== "model",
-        )
-      : category && showBrandModel && showCarExtras
+    category && categorySlug === "toptancilar"
+      ? category.fields.filter((f) => f.type === "select")
+      : category && showDetailed && categorySlug === "yedek-parca"
         ? category.fields.filter(
             (f) => f.type === "select" && f.key !== "marka" && f.key !== "model",
           )
-        : category && showBrandModel && categorySlug === "motorsiklet"
+        : category && showBrandModel && showCarExtras
           ? category.fields.filter(
               (f) =>
                 f.type === "select" && f.key !== "marka" && f.key !== "model",
             )
-          : [];
+          : category && showBrandModel && categorySlug === "motorsiklet"
+            ? category.fields.filter(
+                (f) =>
+                  f.type === "select" &&
+                  f.key !== "marka" &&
+                  f.key !== "model",
+              )
+            : [];
 
   if (isEmlak) {
     return <EmlakFilters value={value} onChange={onChange} onReset={onReset} />;

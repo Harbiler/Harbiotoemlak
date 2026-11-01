@@ -14,6 +14,7 @@ import { CategoryIcon } from "@/components/category-icon";
 import { SellerBadge } from "@/components/listings/seller-badge";
 import { ListingsLoading } from "@/components/listings/listing-states";
 import { PhotoPlaceholder } from "@/components/listings/photo-placeholder";
+import { PhotoUploadFields } from "@/components/listings/photo-upload-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,9 +40,21 @@ import {
   IDENTITY_DOCS_ERROR,
   readFileAsAppFile,
 } from "@/lib/application-file";
+import {
+  emptyPhotoSlots,
+  isRenderablePhoto,
+  LISTING_PHOTO_SLOT_COUNT,
+  photoSlotCountForCategory,
+  resolveListingPhotos,
+  resizePhotoFiles,
+} from "@/lib/listing-photos";
 import type { ListingIdentityDocs } from "@/lib/types";
 import { listingPath } from "@/lib/listing-path";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import {
+  gateListingPublish,
+  rejectionUserMessage,
+} from "@/lib/listing-publish-moderation";
+import { ArrowLeft, ArrowRight, Check, X } from "lucide-react";
 
 type Step = "kategori" | "form" | "onizleme" | "yayin";
 
@@ -71,16 +84,28 @@ function NewListingWizard() {
   const searchParams = useSearchParams();
   const preset = searchParams.get("kategori");
   const presetAlt = searchParams.get("alt");
+  const presetMeslek = searchParams.get("meslek");
 
   const [step, setStep] = useState<Step>("kategori");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [rejectNotice, setRejectNotice] = useState<string | null>(null);
   const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
   const [idBackFile, setIdBackFile] = useState<File | null>(null);
   const [passportFile, setPassportFile] = useState<File | null>(null);
+  const initialCategory =
+    preset && getCategory(preset) ? (preset as CategorySlug) : "";
+  const [photoFiles, setPhotoFiles] = useState<(File | null)[]>(() =>
+    emptyPhotoSlots(initialCategory || LISTING_PHOTO_SLOT_COUNT),
+  );
+  const [photoObjectUrls, setPhotoObjectUrls] = useState<(string | undefined)[]>(
+    () =>
+      emptyPhotoSlots(initialCategory || LISTING_PHOTO_SLOT_COUNT).map(
+        () => undefined,
+      ),
+  );
   const [draft, setDraft] = useState<Draft>(() => ({
-    category:
-      preset && getCategory(preset) ? (preset as CategorySlug) : "",
+    category: initialCategory,
     title: "",
     description: "",
     price: "",
@@ -92,6 +117,9 @@ function NewListingWizard() {
       if (preset === "vasita" && presetAlt && getVasitaSubcategory(presetAlt)) {
         return { altKategori: presetAlt };
       }
+      if (preset === "toptancilar" && presetMeslek) {
+        return { toptanMeslek: presetMeslek };
+      }
       return {};
     })(),
   }));
@@ -101,6 +129,18 @@ function NewListingWizard() {
       router.replace(`/giris?next=${encodeURIComponent("/ilan/yeni")}`);
     }
   }, [ready, user, router]);
+
+  useEffect(() => {
+    const urls = photoFiles.map((file) =>
+      file ? URL.createObjectURL(file) : undefined,
+    );
+    setPhotoObjectUrls(urls);
+    return () => {
+      urls.forEach((u) => {
+        if (u) URL.revokeObjectURL(u);
+      });
+    };
+  }, [photoFiles]);
 
   // URL ?kategori= / &alt= (e.g. Motorsiklet) → jump to form; Vasıta may still need alt.
   // Never clobber an advanced step (onizleme / yayin) if this effect re-fires
@@ -126,6 +166,11 @@ function NewListingWizard() {
   const category = draft.category ? getCategory(draft.category) : undefined;
   const districts = CITIES[draft.city] ?? [];
   const stepIndex = STEPS.findIndex((s) => s.id === step);
+  const photoSlotCount = photoSlotCountForCategory(draft.category);
+
+  useEffect(() => {
+    setPhotoFiles((prev) => resizePhotoFiles(prev, photoSlotCount));
+  }, [photoSlotCount]);
 
   /** Functional field write — avoids stale closures wiping marka/model mid-form. */
   function setDraftField(key: string, value: string) {
@@ -233,7 +278,18 @@ function NewListingWizard() {
         if (passport) identityDocs.passport = passport;
       }
 
-      const status: ListingStatus = "approved";
+      const photos = await resolveListingPhotos({
+        category: draft.category,
+        files: photoFiles,
+      });
+      const moderation = await gateListingPublish({
+        photos,
+        fileNames: photoFiles.map((f) => f?.name),
+        intendedStatus: "approved",
+        recipientEmail: user.email,
+        listingTitle: draft.title.trim(),
+      });
+      const status: ListingStatus = moderation.status;
       const publishedAt = new Date().toISOString();
       const created = createListing({
         category: draft.category,
@@ -242,7 +298,7 @@ function NewListingWizard() {
         price: draft.price ? Number(draft.price) : 0,
         city: draft.city,
         district: draft.district,
-        photos: [`${draft.category}-new`, `${draft.category}-new-2`],
+        photos,
         contactName: draft.contactName.trim(),
         contactPhone: draft.contactPhone.trim(),
         sellerType: user.membershipKind,
@@ -251,8 +307,19 @@ function NewListingWizard() {
         status,
         validUntil: freeListingValidUntil(publishedAt),
         fields: parsedFields,
+        moderatedAt: publishedAt,
+        ...(moderation.rejectReason
+          ? { rejectReason: moderation.rejectReason }
+          : { rejectReason: undefined }),
         ...(identityDocs ? { identityDocs } : {}),
       });
+      if (moderation.flagged && moderation.rejectReason) {
+        setSuccess(false);
+        setRejectNotice(rejectionUserMessage(moderation.rejectReason));
+        setStep("yayin");
+        return;
+      }
+      setRejectNotice(null);
       setSuccess(true);
       setStep("yayin");
       setTimeout(() => {
@@ -335,6 +402,12 @@ function NewListingWizard() {
                   setIdFrontFile(null);
                   setIdBackFile(null);
                   setPassportFile(null);
+                  setPhotoFiles(
+                    resizePhotoFiles(
+                      emptyPhotoSlots(c.slug),
+                      photoSlotCountForCategory(c.slug),
+                    ),
+                  );
                   setStep("form");
                   setError(null);
                 }}
@@ -606,6 +679,22 @@ function NewListingWizard() {
             </div>
           )}
 
+          <div className="hb-surface space-y-4 p-5">
+            <PhotoUploadFields
+              idPrefix="ilan-yeni-photo"
+              category={draft.category}
+              slotCount={photoSlotCount}
+              files={photoFiles}
+              onChange={(index, file) => {
+                setPhotoFiles((prev) => {
+                  const next = resizePhotoFiles(prev, photoSlotCount);
+                  next[index] = file;
+                  return next;
+                });
+              }}
+            />
+          </div>
+
           <div className="hb-surface grid gap-4 p-5 sm:grid-cols-2">
             <div>
               <Label htmlFor="cname">Ad / Firma *</Label>
@@ -652,11 +741,31 @@ function NewListingWizard() {
         <div className="mt-8 space-y-6" data-hb-step="onizleme">
           <div className="hb-surface overflow-hidden">
             <PhotoPlaceholder
-              category={draft.category}
+              category={draft.category as CategorySlug}
               title={draft.title}
               large
               className="aspect-[16/9] w-full"
+              src={photoObjectUrls.find(isRenderablePhoto)}
             />
+            {photoObjectUrls.some(isRenderablePhoto) && (
+              <div className="grid grid-cols-5 gap-2 border-t border-[color-mix(in_oklab,var(--lagoon)_12%,transparent)] bg-white/60 p-3">
+                {photoObjectUrls.map((src, i) =>
+                  isRenderablePhoto(src) ? (
+                    <PhotoPlaceholder
+                      key={`preview-thumb-${i}`}
+                      category={draft.category as CategorySlug}
+                      src={src}
+                      className="aspect-video rounded-lg"
+                    />
+                  ) : (
+                    <div
+                      key={`preview-empty-${i}`}
+                      className="aspect-video rounded-lg border border-dashed border-[color-mix(in_oklab,var(--lagoon)_22%,transparent)] bg-[var(--mist)]/50"
+                    />
+                  ),
+                )}
+              </div>
+            )}
             <div className="space-y-3 p-5">
               <div className="flex flex-wrap items-center gap-2">
                 {previewListing && <SellerBadge listing={previewListing} />}
@@ -701,21 +810,56 @@ function NewListingWizard() {
 
       {step === "yayin" && (
         <div className="mt-12 text-center">
-          <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-green-600 text-white">
-            <Check className="size-7" />
-          </div>
-          <p
-            className="mt-4 text-center text-base font-semibold text-green-600"
-            role="status"
-          >
-            İlanınız Kontrol edildikten sonra yayınlanacaktır
-          </p>
-          <p className="mt-2 text-[var(--muted-foreground)]">
-            {freeListingCopy.detail} Detay sayfasına yönlendiriliyorsunuz…
-          </p>
-          <Button asChild variant="outline" className="mt-6">
-            <Link href="/hesabim">Hesabıma git</Link>
-          </Button>
+          {rejectNotice ? (
+            <>
+              <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-red-600 text-white">
+                <X className="size-7" />
+              </div>
+              <p
+                className="mt-4 text-center text-base font-semibold text-red-700"
+                role="status"
+              >
+                {rejectNotice}
+              </p>
+              <p className="mt-2 text-[var(--muted-foreground)]">
+                Size e-posta ile de bildirildi. Uygun görsellerle düzenleyip tekrar
+                deneyebilirsiniz.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setRejectNotice(null);
+                    setStep("form");
+                  }}
+                >
+                  Görselleri düzenle
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/hesabim">Hesabıma git</Link>
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-green-600 text-white">
+                <Check className="size-7" />
+              </div>
+              <p
+                className="mt-4 text-center text-base font-semibold text-green-600"
+                role="status"
+              >
+                İlanınız Kontrol edildikten sonra yayınlanacaktır
+              </p>
+              <p className="mt-2 text-[var(--muted-foreground)]">
+                {freeListingCopy.detail} Detay sayfasına yönlendiriliyorsunuz…
+              </p>
+              <Button asChild variant="outline" className="mt-6">
+                <Link href="/hesabim">Hesabıma git</Link>
+              </Button>
+            </>
+          )}
         </div>
       )}
     </div>

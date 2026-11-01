@@ -76,6 +76,7 @@ export function ListingsProvider({ children }: { children: ReactNode }) {
         updatedAt: now,
         // Free publish: valid for 1 year from create/publish date.
         validUntil: input.validUntil ?? freeListingValidUntil(now),
+        paymentStatus: input.paymentStatus ?? "free",
       };
       persist([listing, ...listings]);
       return listing;
@@ -111,12 +112,18 @@ export function ListingsProvider({ children }: { children: ReactNode }) {
       if (status === "approved") {
         const publishedAt = new Date().toISOString();
         // On approve: ensure a fresh 1-year free validity window when missing or re-approving.
+        const keepWindow =
+          existing?.status === "approved" && existing.validUntil
+            ? existing.validUntil
+            : freeListingValidUntil(publishedAt);
         updateListing(id, {
           status,
-          validUntil:
-            existing?.status === "approved" && existing.validUntil
-              ? existing.validUntil
-              : freeListingValidUntil(publishedAt),
+          rejectReason: undefined,
+          validUntil: keepWindow,
+          paymentStatus:
+            existing?.paymentStatus === "paid"
+              ? "paid"
+              : existing?.paymentStatus ?? "free",
         });
         return;
       }

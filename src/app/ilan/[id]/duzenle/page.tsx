@@ -1,8 +1,11 @@
-import { SEED_LISTINGS } from "@/lib/seed";
 import { EditListingClient } from "./edit-listing-client";
 
+/**
+ * Static export requires ≥1 param. Real edits use /ilan/duzenle/?id=…
+ * Placeholder is never linked.
+ */
 export function generateStaticParams() {
-  return SEED_LISTINGS.map((listing) => ({ id: listing.id }));
+  return [{ id: "_" }];
 }
 
 export default async function EditListingPage({

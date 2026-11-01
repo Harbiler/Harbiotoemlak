@@ -2,10 +2,11 @@ import { CATEGORIES } from "@/lib/categories";
 import { CategoryPageClient } from "./category-page-client";
 
 export function generateStaticParams() {
-  // `/kategori/vasita` is a dedicated route with its own subpages.
-  return CATEGORIES.filter((category) => category.slug !== "vasita").map(
-    (category) => ({ slug: category.slug }),
-  );
+  // Dedicated hubs with their own subpages.
+  return CATEGORIES.filter(
+    (category) =>
+      category.slug !== "vasita" && category.slug !== "toptancilar",
+  ).map((category) => ({ slug: category.slug }));
 }
 
 export default async function CategoryPage({

@@ -175,8 +175,14 @@ function LoginInner() {
             <DialogHeader>
               <DialogTitle>Şifremi unuttum</DialogTitle>
               <DialogDescription>
-                E-posta ile sıfırlama yakında. Şimdilik hesabınıza erişemiyorsanız destek için
-                site yöneticisiyle iletişime geçin.
+                E-posta ile sıfırlama yakında. Şimdilik hesabınıza erişemiyorsanız{" "}
+                <a
+                  href="mailto:harbidenbakdestek@hotmail.com"
+                  className="font-medium text-[var(--lagoon)] underline-offset-2 hover:underline"
+                >
+                  harbidenbakdestek@hotmail.com
+                </a>{" "}
+                adresine yazın.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>

@@ -1,5 +1,10 @@
+import { clearAllCategoryImageOverrides } from "./category-images";
 import { freeListingValidUntil } from "./listing-validity";
-import { SEED_LISTINGS, SEED_USERS } from "./seed";
+import {
+  LEGACY_SEED_LISTING_IDS,
+  SEED_LISTINGS,
+  SEED_USERS,
+} from "./seed";
 import type {
   CaregiverApplication,
   Listing,
@@ -15,15 +20,28 @@ const REMEMBERED_EMAIL_KEY = "harbidenbak.rememberedEmail";
 const PET_HOTEL_APPS_KEY = "harbidenbak.petHotelApplications";
 const CAREGIVER_APPS_KEY = "harbidenbak.caregiverApplications";
 const VERSION_KEY = "harbidenbak.seedVersion";
-/** Bumped for Bakıcı Arayanlar ilan Adres Bilgisi alanı. */
-const SEED_VERSION = "18";
+/** Bumped for paymentStatus backfill (admin Ödemeler) while keeping user rows. */
+const SEED_VERSION = "21";
+
+const LEGACY_SEED_ID_SET = new Set(LEGACY_SEED_LISTING_IDS);
+
+function stripLegacySeedListings(listings: Listing[]): Listing[] {
+  return listings.filter((l) => !LEGACY_SEED_ID_SET.has(l.id));
+}
 
 function ensureListingValidity(listing: Listing): Listing {
-  if (listing.validUntil) return listing;
-  return {
-    ...listing,
-    validUntil: freeListingValidUntil(listing.createdAt),
-  };
+  let next = listing;
+  if (!next.validUntil) {
+    next = {
+      ...next,
+      validUntil: freeListingValidUntil(next.createdAt),
+    };
+  }
+  // Launch rule: missing paymentStatus → free for the validUntil window.
+  if (!next.paymentStatus) {
+    next = { ...next, paymentStatus: "free" };
+  }
+  return next;
 }
 
 function canUseStorage(): boolean {
@@ -34,8 +52,23 @@ export function ensureSeedData(): void {
   if (!canUseStorage()) return;
   const version = localStorage.getItem(VERSION_KEY);
   if (version !== SEED_VERSION) {
-    localStorage.setItem(USERS_KEY, JSON.stringify(SEED_USERS));
-    localStorage.setItem(LISTINGS_KEY, JSON.stringify(SEED_LISTINGS));
+    if (!localStorage.getItem(USERS_KEY)) {
+      localStorage.setItem(USERS_KEY, JSON.stringify(SEED_USERS));
+    }
+    const rawListings = localStorage.getItem(LISTINGS_KEY);
+    if (rawListings) {
+      try {
+        const parsed = JSON.parse(rawListings) as Listing[];
+        localStorage.setItem(
+          LISTINGS_KEY,
+          JSON.stringify(stripLegacySeedListings(parsed)),
+        );
+      } catch {
+        localStorage.setItem(LISTINGS_KEY, JSON.stringify(SEED_LISTINGS));
+      }
+    } else {
+      localStorage.setItem(LISTINGS_KEY, JSON.stringify(SEED_LISTINGS));
+    }
     localStorage.setItem(VERSION_KEY, SEED_VERSION);
     return;
   }
@@ -75,11 +108,12 @@ export function loadListings(): Listing[] {
       if (row !== l) changed = true;
       if (row.status === "pending") {
         changed = true;
-        // Keep auto-approve; start free validity from approval/load time if missing.
+        // Keep auto-approve for pending only; rejected stays rejected (moderation).
         row = {
           ...row,
           status: "approved" as const,
           validUntil: row.validUntil || freeListingValidUntil(),
+          rejectReason: undefined,
         };
       }
       return row;
@@ -291,4 +325,5 @@ export function resetDemoData(): void {
   localStorage.setItem(PET_HOTEL_APPS_KEY, JSON.stringify([]));
   localStorage.setItem(CAREGIVER_APPS_KEY, JSON.stringify([]));
   localStorage.setItem(VERSION_KEY, SEED_VERSION);
+  clearAllCategoryImageOverrides();
 }

@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { NAV_CATEGORIES } from "@/lib/categories";
 import { BrandLogo } from "@/components/brand-logo";
+import { CORPORATE_LINKS, LEGAL_LINKS } from "@/lib/info-pages";
 
 export function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-[color-mix(in_oklab,#9d174d_20%,transparent)] bg-[linear-gradient(160deg,#4a1830_0%,#831843_48%,#be185d_100%)] text-white">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-2 lg:grid-cols-5">
         <div className="lg:col-span-1">
           <BrandLogo inverted wordmarkClassName="text-2xl sm:text-2xl" />
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-white/65">
@@ -15,13 +15,27 @@ export function SiteFooter() {
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
-            Kategoriler
+            Kurumsal
+          </p>
+          <ul className="mt-4 space-y-2 text-sm text-white/80">
+            {CORPORATE_LINKS.map((item) => (
+              <li key={item.href}>
+                <Link href={item.href} className="transition hover:text-white">
+                  {item.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
+            Gizlilik ve Kullanım
           </p>
           <ul className="mt-4 grid grid-cols-1 gap-2 text-sm text-white/80 sm:grid-cols-2 lg:grid-cols-1">
-            {NAV_CATEGORIES.map((c) => (
-              <li key={c.slug}>
-                <Link href={`/kategori/${c.slug}`} className="transition hover:text-white">
-                  {c.name}
+            {LEGAL_LINKS.map((item) => (
+              <li key={item.href}>
+                <Link href={item.href} className="transition hover:text-white">
+                  {item.title}
                 </Link>
               </li>
             ))}

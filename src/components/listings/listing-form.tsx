@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   CATEGORIES,
@@ -28,6 +28,14 @@ import {
   IDENTITY_DOCS_ERROR,
   readFileAsAppFile,
 } from "@/lib/application-file";
+import {
+  emptyPhotoSlots,
+  isRenderablePhoto,
+  photoSlotCountForCategory,
+  resolveListingPhotos,
+  resizePhotoFiles,
+  resizePhotoSrcs,
+} from "@/lib/listing-photos";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,12 +50,29 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { BrandModelFields } from "@/components/listings/brand-model-fields";
 import { IdentityDocsFields } from "@/components/listings/identity-docs-fields";
+import { PhotoUploadFields } from "@/components/listings/photo-upload-fields";
 import { supportsBrandModelSearch } from "@/lib/brand-models";
 import {
   getVasitaSubcategory,
   VASITA_SUBCATEGORIES,
 } from "@/lib/vasita-subcategories";
 import { listingPath } from "@/lib/listing-path";
+import {
+  gateListingPublish,
+  rejectionUserMessage,
+} from "@/lib/listing-publish-moderation";
+import { loadUsers } from "@/lib/storage";
+
+function padExistingPhotos(
+  photos: string[] | undefined,
+  category: CategorySlug | string,
+): (string | undefined)[] {
+  const count = photoSlotCountForCategory(category);
+  return Array.from({ length: count }, (_, i) => {
+    const p = photos?.[i];
+    return isRenderablePhoto(p) ? p : undefined;
+  });
+}
 
 interface FormState {
   category: CategorySlug;
@@ -166,12 +191,29 @@ export function ListingForm({
   const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
   const [idBackFile, setIdBackFile] = useState<File | null>(null);
   const [passportFile, setPassportFile] = useState<File | null>(null);
+  const [photoFiles, setPhotoFiles] = useState<(File | null)[]>(() =>
+    emptyPhotoSlots(listing?.category ?? defaultCategory ?? "emlak"),
+  );
+  const [existingPhotoSrcs, setExistingPhotoSrcs] = useState<
+    (string | undefined)[]
+  >(() =>
+    padExistingPhotos(
+      listing?.photos,
+      listing?.category ?? defaultCategory ?? "emlak",
+    ),
+  );
 
   const category = getCategory(form.category);
   const districts = CITIES[form.city] ?? [];
   const needsIdentityDocs = form.category === "bakici-arayanlar";
+  const photoSlotCount = photoSlotCountForCategory(form.category);
 
   const categoryFields = useMemo(() => category?.fields ?? [], [category]);
+
+  useEffect(() => {
+    setPhotoFiles((prev) => resizePhotoFiles(prev, photoSlotCount));
+    setExistingPhotoSrcs((prev) => resizePhotoSrcs(prev, photoSlotCount));
+  }, [photoSlotCount]);
 
   function setField(key: string, value: string) {
     setForm((f) => ({ ...f, fields: { ...f.fields, [key]: value } }));
@@ -270,17 +312,39 @@ export function ListingForm({
       }
 
       const sellerType: MembershipKind = user.membershipKind;
-      const status: ListingStatus = adminMode
+      const intendedStatus: ListingStatus = adminMode
         ? form.status
         : listing
-          ? listing.status
+          ? listing.status === "rejected"
+            ? "approved"
+            : listing.status
           : "approved";
 
-      const nextStatus: ListingStatus = adminMode
-        ? status
-        : listing
-          ? listing.status
-          : "approved";
+      const identityDocs = await resolveIdentityDocs();
+      const photos = await resolveListingPhotos({
+        category: form.category,
+        files: photoFiles,
+        existing: existingPhotoSrcs,
+      });
+
+      const ownerEmail =
+        listing && adminMode
+          ? loadUsers().find((u) => u.id === listing.sellerId)?.email ||
+            user.email
+          : user.email;
+
+      const moderation = await gateListingPublish({
+        photos,
+        fileNames: photoFiles.map((f) => f?.name),
+        intendedStatus,
+        recipientEmail: ownerEmail,
+        listingTitle: form.title.trim(),
+        listingId: listing?.id,
+        // Admin may set hidden/pending without re-scanning; approved always scans.
+        skipScan: adminMode && intendedStatus !== "approved",
+      });
+
+      const nextStatus = moderation.status;
       const nowIso = new Date().toISOString();
       const validUntil =
         !listing
@@ -289,8 +353,6 @@ export function ListingForm({
             ? freeListingValidUntil(nowIso)
             : listing.validUntil || freeListingValidUntil(listing.createdAt);
 
-      const identityDocs = await resolveIdentityDocs();
-
       const payload = {
         category: form.category,
         title: form.title.trim(),
@@ -298,7 +360,7 @@ export function ListingForm({
         price: form.price ? Number(form.price) : 0,
         city: form.city,
         district: form.district,
-        photos: listing?.photos ?? [`${form.category}-new`],
+        photos,
         contactName: form.contactName.trim(),
         contactPhone: form.contactPhone.trim(),
         sellerType,
@@ -308,8 +370,21 @@ export function ListingForm({
         featured: listing?.featured,
         validUntil,
         fields: parsedFields,
+        moderatedAt: nowIso,
+        rejectReason: moderation.rejectReason,
         ...(identityDocs ? { identityDocs } : {}),
       };
+
+      if (moderation.flagged && moderation.rejectReason) {
+        if (listing) {
+          updateListing(listing.id, payload);
+        } else {
+          createListing(payload);
+        }
+        setSuccess(false);
+        setError(rejectionUserMessage(moderation.rejectReason));
+        return;
+      }
 
       if (listing) {
         updateListing(listing.id, payload);
@@ -366,6 +441,9 @@ export function ListingForm({
                 setIdBackFile(null);
                 setPassportFile(null);
               }
+              const nextSlots = photoSlotCountForCategory(next);
+              setPhotoFiles((prev) => resizePhotoFiles(prev, nextSlots));
+              setExistingPhotoSrcs((prev) => resizePhotoSrcs(prev, nextSlots));
             }}
             disabled={!!listing && !adminMode}
             items={categorySelectItems}
@@ -574,6 +652,30 @@ export function ListingForm({
       )}
 
       <div className="space-y-4 rounded-xl border border-pink-500/20 bg-[color-mix(in_oklab,#fff7fa_90%,#fce7f0)] p-5">
+        <PhotoUploadFields
+          idPrefix="listing-form-photo"
+          category={form.category}
+          slotCount={photoSlotCount}
+          files={photoFiles}
+          existingSrcs={existingPhotoSrcs}
+          onChange={(index, file) => {
+            setPhotoFiles((prev) => {
+              const next = resizePhotoFiles(prev, photoSlotCount);
+              next[index] = file;
+              return next;
+            });
+            if (file === null) {
+              setExistingPhotoSrcs((prev) => {
+                const next = resizePhotoSrcs(prev, photoSlotCount);
+                next[index] = undefined;
+                return next;
+              });
+            }
+          }}
+        />
+      </div>
+
+      <div className="space-y-4 rounded-xl border border-pink-500/20 bg-[color-mix(in_oklab,#fff7fa_90%,#fce7f0)] p-5">
         <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold text-[var(--ink)]">
           İletişim
         </h2>
@@ -617,6 +719,7 @@ export function ListingForm({
                 pending: "Onay bekliyor",
                 approved: "Yayında",
                 hidden: "Gizli",
+                rejected: "Reddedildi",
               }}
             >
               <SelectTrigger className="mt-1.5 w-full">
@@ -626,6 +729,7 @@ export function ListingForm({
                 <SelectItem value="pending">Onay bekliyor</SelectItem>
                 <SelectItem value="approved">Yayında</SelectItem>
                 <SelectItem value="hidden">Gizli</SelectItem>
+                <SelectItem value="rejected">Reddedildi</SelectItem>
               </SelectContent>
             </Select>
           </div>
