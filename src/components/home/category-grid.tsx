@@ -38,6 +38,34 @@ export function CategoryGrid() {
       data-hb-home-categories="photos"
       data-hb-home-style="depth-3d"
     >
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3 animate-[fadeUp_0.65s_ease-out_both]">
+        <div>
+          <h2 className="hb-display text-xl font-bold text-[var(--ink)] sm:text-2xl">
+            Kategoriler
+          </h2>
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+            Bir kategori seçin veya tüm ilanlara göz atın.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/ara?tum=1"
+            className="inline-flex h-10 items-center justify-center rounded-lg border border-[color-mix(in_oklab,var(--lagoon)_35%,transparent)] bg-white/80 px-4 text-sm font-medium text-[var(--lagoon)] shadow-sm transition duration-300 hover:bg-[var(--mist)] hover:-translate-y-0.5"
+            data-hb-home-all-listings
+            data-hb-all-listings
+          >
+            Tüm ilanları gör
+          </Link>
+          <Link
+            href="/ara?tum=1&detay=1"
+            className="inline-flex h-10 items-center justify-center rounded-lg border border-[color-mix(in_oklab,var(--lagoon)_35%,transparent)] bg-white/80 px-4 text-sm font-medium text-[var(--lagoon)] shadow-sm transition duration-300 hover:bg-[var(--mist)] hover:-translate-y-0.5"
+            data-hb-home-open-detailed-search
+            data-hb-open-detailed-search
+          >
+            Detaylı arama
+          </Link>
+        </div>
+      </div>
       <ul className="hb-tile-scene grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6 lg:gap-4 animate-[fadeUp_0.7s_ease-out_0.05s_both]">
         {NAV_CATEGORIES.map((c, i) => {
           const src =

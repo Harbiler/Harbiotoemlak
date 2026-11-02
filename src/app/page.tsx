@@ -44,7 +44,9 @@ export default function HomePage() {
               </p>
             </div>
             <Button asChild variant="outline" className="hb-cta-depth-outline bg-white/80">
-              <Link href="/ara">Tüm ilanlarda ara</Link>
+              <Link href="/ara?tum=1" data-hb-home-all-listings data-hb-all-listings>
+                Tüm ilanları gör
+              </Link>
             </Button>
           </div>
           <div className="mt-10">

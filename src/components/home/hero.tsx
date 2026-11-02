@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Search } from "lucide-react";
+import { ArrowRight, LayoutGrid, Search } from "lucide-react";
 
 export function HomeHero() {
   return (
@@ -35,6 +35,17 @@ export function HomeHero() {
           <Link href="/ilan/yeni">
             Ücretsiz ilan ver
             <ArrowRight className="size-4" />
+          </Link>
+        </Button>
+        <Button
+          asChild
+          size="lg"
+          variant="outline"
+          className="hb-cta-depth-outline h-11 border-[color-mix(in_oklab,var(--lagoon)_35%,transparent)] bg-white/80 px-5 text-[var(--lagoon)] backdrop-blur-sm transition duration-300 hover:bg-[var(--mist)] hover:text-[var(--lagoon)] hover:-translate-y-0.5"
+        >
+          <Link href="/ara?tum=1" data-hb-home-all-listings data-hb-all-listings>
+            <LayoutGrid className="size-4" />
+            Tüm ilanları gör
           </Link>
         </Button>
       </div>
