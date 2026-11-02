@@ -38,7 +38,7 @@ export function CategoryGrid() {
       data-hb-home-categories="photos"
       data-hb-home-style="depth-3d"
     >
-      <ul className="hb-tile-scene grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:gap-5 animate-[fadeUp_0.7s_ease-out_0.05s_both]">
+      <ul className="hb-tile-scene grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6 lg:gap-4 animate-[fadeUp_0.7s_ease-out_0.05s_both]">
         {NAV_CATEGORIES.map((c, i) => {
           const src =
             categoryImagePath(c.slug, overrides) ??

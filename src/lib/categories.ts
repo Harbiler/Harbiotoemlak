@@ -573,7 +573,7 @@ export const HIDDEN_NAV_CATEGORY_SLUGS = new Set([
 ]);
 
 /**
- * Homepage / nav order (4-col desktop).
+ * Homepage / nav order (6-col desktop).
  * Evcil + Bakıcı left of Yedek Parça; Toptancılar immediately right of Bakıcı.
  */
 export const NAV_CATEGORY_ORDER: CategorySlug[] = [
