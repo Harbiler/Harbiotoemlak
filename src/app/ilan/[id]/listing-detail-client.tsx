@@ -10,6 +10,7 @@ import { listingNumber } from "@/lib/types";
 import { useAuth } from "@/context/auth-context";
 import { useListings } from "@/context/listings-context";
 import { useUserPrefs } from "@/context/user-prefs-context";
+import { AddressMap } from "@/components/listings/address-map";
 import { PhotoPlaceholder } from "@/components/listings/photo-placeholder";
 import { SellerBadge } from "@/components/listings/seller-badge";
 import { ListingCard } from "@/components/listings/listing-card";
@@ -34,6 +35,12 @@ import {
   Shield,
   Printer,
 } from "lucide-react";
+
+/** Keep digits and leading + for tel: links. */
+function telHref(phone: string): string {
+  const cleaned = phone.replace(/[^\d+]/g, "");
+  return cleaned ? `tel:${cleaned}` : "tel:";
+}
 
 export function ListingDetailClient({ id }: { id: string }) {
   const searchParams = useSearchParams();
@@ -307,14 +314,29 @@ export function ListingDetailClient({ id }: { id: string }) {
 
           <div className="hb-surface mt-6 p-5">
             <h2 className="font-semibold text-[var(--ink)]">Konum</h2>
-            <p className="mt-2 flex items-start gap-2 text-sm text-[var(--muted-foreground)]">
-              <MapPin className="mt-0.5 size-4 shrink-0 text-[var(--lagoon)]" />
-              {listing.district}, {listing.city} — harita entegrasyonu demo sürümünde metin olarak
-              gösterilir.
-            </p>
-            <div className="mt-4 flex h-36 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#d9ecea,#e7eef1)] text-sm text-[var(--muted-foreground)]">
-              {listing.city} / {listing.district} konum önizlemesi
-            </div>
+            {listing.category === "vasita" &&
+            String(listing.fields.adres ?? "").trim() ? (
+              <div className="mt-3">
+                <AddressMap
+                  address={String(listing.fields.adres)}
+                  city={listing.city}
+                  district={listing.district}
+                />
+              </div>
+            ) : (
+              <>
+                <p className="mt-2 flex items-start gap-2 text-sm text-[var(--muted-foreground)]">
+                  <MapPin className="mt-0.5 size-4 shrink-0 text-[var(--lagoon)]" />
+                  {listing.district}, {listing.city}
+                  {listing.fields.adres
+                    ? ` — ${String(listing.fields.adres)}`
+                    : " — harita entegrasyonu demo sürümünde metin olarak gösterilir."}
+                </p>
+                <div className="mt-4 flex h-36 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#d9ecea,#e7eef1)] text-sm text-[var(--muted-foreground)]">
+                  {listing.city} / {listing.district} konum önizlemesi
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -346,13 +368,31 @@ export function ListingDetailClient({ id }: { id: string }) {
               <p className="mt-3 text-xs text-[var(--muted-foreground)]">
                 İlan no: {ilanNo} · {formatDate(listing.createdAt)}
               </p>
-              <Button
-                className="mt-4 w-full bg-[var(--lagoon)] hover:bg-[#be185d]"
-                onClick={() => setShowPhone(true)}
-              >
-                <Phone className="size-4" />
-                {showPhone ? listing.contactPhone : "Telefonu göster"}
-              </Button>
+              {listing.category === "vasita" && showPhone ? (
+                <Button
+                  asChild
+                  className="mt-4 w-full bg-[var(--lagoon)] hover:bg-[#be185d]"
+                  data-hb-phone-action="dial"
+                >
+                  <a href={telHref(listing.contactPhone)}>
+                    <Phone className="size-4" />
+                    {listing.contactPhone}
+                  </a>
+                </Button>
+              ) : (
+                <Button
+                  className="mt-4 w-full bg-[var(--lagoon)] hover:bg-[#be185d]"
+                  data-hb-phone-action="reveal"
+                  onClick={() => setShowPhone(true)}
+                >
+                  <Phone className="size-4" />
+                  {listing.category === "vasita"
+                    ? "Numarayı göster"
+                    : showPhone
+                      ? listing.contactPhone
+                      : "Telefonu göster"}
+                </Button>
+              )}
             </div>
           </div>
 

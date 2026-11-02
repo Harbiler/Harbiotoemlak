@@ -48,6 +48,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AddressMap } from "@/components/listings/address-map";
 import { BrandModelFields } from "@/components/listings/brand-model-fields";
 import { IdentityDocsFields } from "@/components/listings/identity-docs-fields";
 import { PhotoUploadFields } from "@/components/listings/photo-upload-fields";
@@ -632,6 +633,14 @@ export function ListingForm({
               </div>
             ))}
           </div>
+          {form.category === "vasita" && (
+            <AddressMap
+              compact
+              address={form.fields.adres ?? ""}
+              city={form.city}
+              district={form.district}
+            />
+          )}
           {needsIdentityDocs && (
             <IdentityDocsFields
               idPrefix="listing-form"

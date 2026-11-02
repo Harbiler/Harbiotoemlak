@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getCategory } from "@/lib/categories";
@@ -58,17 +58,27 @@ export function VasitaSubPageClient({ subSlug }: { subSlug: string }) {
   const pathname = usePathname();
   const selectedBrand = (searchParams.get("marka") ?? "").trim();
   const showAllListings = searchParams.get("tum") === "1";
+  const detailFromUrl = searchParams.get("detay") === "1";
   const showBrandIndex =
     !!sub &&
     BRAND_INDEX_SUBS.has(sub.slug) &&
     !selectedBrand &&
     !showAllListings;
+  const useCollapsibleSearch = !!sub && BRAND_INDEX_SUBS.has(sub.slug);
 
   const [filters, setFilters] = useState<FilterState>(() => {
     const details: Record<string, string> = {};
     if (selectedBrand) details.marka = selectedBrand;
     return { ...DEFAULT_FILTERS, details };
   });
+  const [detailOpen, setDetailOpen] = useState(
+    () => detailFromUrl || !!selectedBrand,
+  );
+
+  useEffect(() => {
+    if (!useCollapsibleSearch) return;
+    setDetailOpen(detailFromUrl || !!selectedBrand);
+  }, [detailFromUrl, selectedBrand, useCollapsibleSearch]);
 
   const listings = useMemo(() => {
     if (!sub) return [];
@@ -130,6 +140,7 @@ export function VasitaSubPageClient({ subSlug }: { subSlug: string }) {
     const params = new URLSearchParams();
     params.set("marka", brand);
     router.push(`${pathname}?${params.toString()}`);
+    setDetailOpen(true);
     setFilters((prev) => ({
       ...prev,
       details: { ...prev.details, marka: brand, model: "" },
@@ -138,7 +149,34 @@ export function VasitaSubPageClient({ subSlug }: { subSlug: string }) {
 
   function clearBrand() {
     router.push(pathname);
+    setDetailOpen(false);
     setFilters({ ...DEFAULT_FILTERS, details: {} });
+  }
+
+  function openAllListings(opts?: { detail?: boolean }) {
+    const params = new URLSearchParams();
+    params.set("tum", "1");
+    if (opts?.detail) params.set("detay", "1");
+    router.push(`${pathname}?${params.toString()}`);
+    setDetailOpen(!!opts?.detail);
+    setFilters({ ...DEFAULT_FILTERS, details: {} });
+  }
+
+  function syncListingParams(
+    next: FilterState,
+    opts?: { keepDetail?: boolean },
+  ) {
+    const marka = next.details.marka?.trim();
+    const params = new URLSearchParams();
+    if (marka) {
+      params.set("marka", marka);
+    } else if (showAllListings || !selectedBrand) {
+      // Stay on “Tüm ilanlar” when no marka is selected
+      params.set("tum", "1");
+    }
+    if (opts?.keepDetail ?? detailOpen) params.set("detay", "1");
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
   }
 
   if (!sub) {
@@ -186,14 +224,20 @@ export function VasitaSubPageClient({ subSlug }: { subSlug: string }) {
                   Vasıta
                 </p>
                 <h1 className="hb-display text-3xl font-bold text-[var(--ink)] sm:text-4xl">
-                  {selectedBrand ? selectedBrand : sub.name}
+                  {selectedBrand
+                    ? selectedBrand
+                    : showAllListings
+                      ? `Tüm ${sub.name.toLocaleLowerCase("tr")} ilanları`
+                      : sub.name}
                 </h1>
                 <p className="mt-1 max-w-xl text-[var(--muted-foreground)]">
                   {selectedBrand
                     ? `${sub.name} · markaya göre ilanlar`
                     : showBrandIndex
-                      ? "Markayı seçin; sağda her markanın ilan sayısı görünür."
-                      : sub.description}
+                      ? "Markayı seçin; sağda her markanın ilan sayısı görünür. Tüm ilanlar veya detaylı arama ile listeye geçin."
+                      : showAllListings
+                        ? `${sub.name} kategorisindeki tüm ilanlar. Detaylı arama paneliyle daraltabilirsiniz.`
+                        : sub.description}
                 </p>
               </div>
             </div>
@@ -226,7 +270,7 @@ export function VasitaSubPageClient({ subSlug }: { subSlug: string }) {
       <div className="mx-auto max-w-6xl space-y-8 px-4 py-10 sm:px-6">
         {showBrandIndex ? (
           <div>
-            <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
               <div>
                 <h2 className="hb-display text-lg font-semibold text-[var(--ink)]">
                   Markalar
@@ -237,17 +281,26 @@ export function VasitaSubPageClient({ subSlug }: { subSlug: string }) {
                     : `${brandRows.length} marka · ${listings.length} ilan`}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  const params = new URLSearchParams();
-                  params.set("tum", "1");
-                  router.push(`${pathname}?${params.toString()}`);
-                }}
-                className="text-sm font-medium text-[var(--lagoon)] hover:underline"
-              >
-                Tüm ilanları göster
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-[color-mix(in_oklab,var(--lagoon)_35%,transparent)] bg-white/80 text-[var(--lagoon)] hover:bg-[var(--mist)] hover:text-[var(--lagoon)]"
+                  onClick={() => openAllListings()}
+                  data-hb-all-listings
+                >
+                  Tüm ilanlar
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-[color-mix(in_oklab,var(--lagoon)_35%,transparent)] bg-white/80 text-[var(--lagoon)] hover:bg-[var(--mist)] hover:text-[var(--lagoon)]"
+                  onClick={() => openAllListings({ detail: true })}
+                  data-hb-open-detailed-search
+                >
+                  Detaylı arama
+                </Button>
+              </div>
             </div>
             <div className="hb-surface overflow-hidden">
               <ul
@@ -293,20 +346,38 @@ export function VasitaSubPageClient({ subSlug }: { subSlug: string }) {
               value={filtersForView}
               onChange={(next) => {
                 setFilters(next);
-                const marka = next.details.marka?.trim();
-                const params = new URLSearchParams(searchParams.toString());
-                params.delete("tum");
-                if (marka) params.set("marka", marka);
-                else params.delete("marka");
-                const qs = params.toString();
-                router.replace(qs ? `${pathname}?${qs}` : pathname);
+                if (useCollapsibleSearch) {
+                  syncListingParams(next);
+                } else {
+                  const marka = next.details.marka?.trim();
+                  const params = new URLSearchParams(searchParams.toString());
+                  if (marka) params.set("marka", marka);
+                  else params.delete("marka");
+                  const qs = params.toString();
+                  router.replace(qs ? `${pathname}?${qs}` : pathname);
+                }
               }}
               onReset={() => {
                 setFilters({ ...DEFAULT_FILTERS, details: {} });
-                clearBrand();
+                if (useCollapsibleSearch && showAllListings) {
+                  openAllListings({ detail: detailOpen });
+                } else {
+                  clearBrand();
+                }
               }}
               categorySlug="vasita"
               vasitaSub={sub.slug}
+              collapsible={useCollapsibleSearch}
+              open={useCollapsibleSearch ? detailOpen : undefined}
+              onOpenChange={
+                useCollapsibleSearch
+                  ? (open) => {
+                      setDetailOpen(open);
+                      syncListingParams(filtersForView, { keepDetail: open });
+                    }
+                  : undefined
+              }
+              defaultOpen={detailFromUrl || !!selectedBrand}
             />
             <div>
               <p className="mb-4 text-sm text-[var(--muted-foreground)]">

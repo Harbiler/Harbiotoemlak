@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { AddressMap } from "@/components/listings/address-map";
 import { BrandModelFields } from "@/components/listings/brand-model-fields";
 import { IdentityDocsFields } from "@/components/listings/identity-docs-fields";
 import { supportsBrandModelSearch } from "@/lib/brand-models";
@@ -665,6 +666,14 @@ function NewListingWizard() {
                   </div>
                 ))}
               </div>
+              {draft.category === "vasita" && (
+                <AddressMap
+                  compact
+                  address={draft.fields.adres ?? ""}
+                  city={draft.city}
+                  district={draft.district}
+                />
+              )}
               {draft.category === "bakici-arayanlar" && (
                 <IdentityDocsFields
                   idPrefix="ilan-yeni"
@@ -782,9 +791,22 @@ function NewListingWizard() {
               <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--muted-foreground)]">
                 {draft.description}
               </p>
+              {draft.category === "vasita" && draft.fields.renk && (
+                <p className="text-sm text-[var(--ink)]">
+                  Renk: <span className="font-medium">{draft.fields.renk}</span>
+                </p>
+              )}
               <p className="text-sm">
                 İletişim: {draft.contactName} · {draft.contactPhone}
               </p>
+              {draft.category === "vasita" && draft.fields.adres && (
+                <AddressMap
+                  compact
+                  address={draft.fields.adres}
+                  city={draft.city}
+                  district={draft.district}
+                />
+              )}
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
