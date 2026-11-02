@@ -72,6 +72,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { CategoryImagesPanel } from "@/components/admin/category-images-panel";
+import { MediaDownloadLink } from "@/components/media/media-download-link";
+import { ResolvedMediaImg } from "@/components/media/resolved-media-img";
 
 type MemberGroup = "all" | "bireysel" | "kurumsal" | "bakici";
 type PaymentView = "due" | "all";
@@ -1065,20 +1067,20 @@ export default function AdminPage() {
                     </TableCell>
                     <TableCell className="text-sm">
                       <div className="flex flex-col gap-1">
-                        <a
-                          href={app.idDocument.dataUrl}
-                          download={app.idDocument.name}
+                        <MediaDownloadLink
+                          src={app.idDocument.dataUrl}
+                          fileName={app.idDocument.name}
                           className="text-[var(--lagoon)] hover:underline"
                         >
                           Kimlik: {app.idDocument.name}
-                        </a>
-                        <a
-                          href={app.residenceDocument.dataUrl}
-                          download={app.residenceDocument.name}
+                        </MediaDownloadLink>
+                        <MediaDownloadLink
+                          src={app.residenceDocument.dataUrl}
+                          fileName={app.residenceDocument.name}
                           className="text-[var(--lagoon)] hover:underline"
                         >
                           İkametgâh: {app.residenceDocument.name}
-                        </a>
+                        </MediaDownloadLink>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -1156,8 +1158,7 @@ export default function AdminPage() {
                   <TableRow key={app.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        <ResolvedMediaImg
                           src={app.profilePhoto.dataUrl}
                           alt=""
                           className="size-10 rounded-full object-cover"
@@ -1192,57 +1193,57 @@ export default function AdminPage() {
                     <TableCell className="text-sm">
                       <div className="flex flex-col gap-1">
                         {app.idFront && (
-                          <a
-                            href={app.idFront.dataUrl}
-                            download={app.idFront.name}
+                          <MediaDownloadLink
+                            src={app.idFront.dataUrl}
+                            fileName={app.idFront.name}
                             className="text-[var(--lagoon)] hover:underline"
                           >
                             Kimlik ön: {app.idFront.name}
-                          </a>
+                          </MediaDownloadLink>
                         )}
                         {app.idBack && (
-                          <a
-                            href={app.idBack.dataUrl}
-                            download={app.idBack.name}
+                          <MediaDownloadLink
+                            src={app.idBack.dataUrl}
+                            fileName={app.idBack.name}
                             className="text-[var(--lagoon)] hover:underline"
                           >
                             Kimlik arka: {app.idBack.name}
-                          </a>
+                          </MediaDownloadLink>
                         )}
                         {app.passport && (
-                          <a
-                            href={app.passport.dataUrl}
-                            download={app.passport.name}
+                          <MediaDownloadLink
+                            src={app.passport.dataUrl}
+                            fileName={app.passport.name}
                             className="text-[var(--lagoon)] hover:underline"
                           >
                             Pasaport: {app.passport.name}
-                          </a>
+                          </MediaDownloadLink>
                         )}
                         {app.residenceDocument && (
-                          <a
-                            href={app.residenceDocument.dataUrl}
-                            download={app.residenceDocument.name}
+                          <MediaDownloadLink
+                            src={app.residenceDocument.dataUrl}
+                            fileName={app.residenceDocument.name}
                             className="text-[var(--lagoon)] hover:underline"
                           >
                             İkametgâh: {app.residenceDocument.name}
-                          </a>
+                          </MediaDownloadLink>
                         )}
                         {app.criminalRecordDocument && (
-                          <a
-                            href={app.criminalRecordDocument.dataUrl}
-                            download={app.criminalRecordDocument.name}
+                          <MediaDownloadLink
+                            src={app.criminalRecordDocument.dataUrl}
+                            fileName={app.criminalRecordDocument.name}
                             className="text-[var(--lagoon)] hover:underline"
                           >
                             Sabıka: {app.criminalRecordDocument.name}
-                          </a>
+                          </MediaDownloadLink>
                         )}
-                        <a
-                          href={app.profilePhoto.dataUrl}
-                          download={app.profilePhoto.name}
+                        <MediaDownloadLink
+                          src={app.profilePhoto.dataUrl}
+                          fileName={app.profilePhoto.name}
                           className="text-[var(--lagoon)] hover:underline"
                         >
                           Profil: {app.profilePhoto.name}
-                        </a>
+                        </MediaDownloadLink>
                       </div>
                     </TableCell>
                     <TableCell>

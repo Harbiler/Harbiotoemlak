@@ -1,4 +1,7 @@
+"use client";
+
 import { CategoryIcon } from "@/components/category-icon";
+import { useMediaSrc } from "@/hooks/use-media-src";
 import { getCategory } from "@/lib/categories";
 import { isRenderablePhoto } from "@/lib/listing-photos";
 import type { CategorySlug } from "@/lib/types";
@@ -31,11 +34,12 @@ export function PhotoPlaceholder({
   title?: string;
   className?: string;
   large?: boolean;
-  /** Data URL or http(s) path — when set, renders the real image. */
+  /** Data URL, path, or device IndexedDB media ref (`idb:hb/…`). */
   src?: string;
 }) {
   const cat = getCategory(category);
   const label = title ? `${title} görseli` : "İlan görseli";
+  const resolved = useMediaSrc(isRenderablePhoto(src) ? src : undefined);
 
   if (isRenderablePhoto(src)) {
     return (
@@ -44,8 +48,12 @@ export function PhotoPlaceholder({
         role="img"
         aria-label={label}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt={label} className="size-full object-cover" />
+        {resolved ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={resolved} alt={label} className="size-full object-cover" />
+        ) : (
+          <div className="size-full animate-pulse bg-[var(--mist)]" />
+        )}
       </div>
     );
   }

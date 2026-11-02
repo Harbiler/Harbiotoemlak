@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { NAV_CATEGORIES } from "@/lib/categories";
 import {
@@ -11,7 +10,7 @@ import {
   loadCategoryImageOverrides,
   type CategoryImageOverrides,
 } from "@/lib/category-images";
-import { CategoryIcon } from "@/components/category-icon";
+import { CategoryTileImage } from "@/components/home/category-tile-image";
 
 function useCategoryImageOverrides(): CategoryImageOverrides {
   const [overrides, setOverrides] = useState<CategoryImageOverrides>({});
@@ -59,23 +58,11 @@ export function CategoryGrid() {
               >
                 <span className="hb-depth-tile__face relative flex h-full flex-col overflow-hidden rounded-2xl bg-white">
                   <span className="relative aspect-[5/4] w-full overflow-hidden bg-[color-mix(in_oklab,var(--ink)_8%,white)]">
-                    {src ? (
-                      <Image
-                        src={src}
-                        alt=""
-                        fill
-                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 240px"
-                        className="object-cover transition duration-500 ease-out group-hover:scale-[1.06]"
-                        unoptimized
-                      />
-                    ) : (
-                      <span
-                        className="flex size-full items-center justify-center text-white"
-                        style={{ backgroundColor: c.accent }}
-                      >
-                        <CategoryIcon slug={c.slug} className="size-8" />
-                      </span>
-                    )}
+                    <CategoryTileImage
+                      src={src}
+                      accent={c.accent}
+                      slug={c.slug}
+                    />
                     <span
                       aria-hidden
                       className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_42%,rgba(74,24,48,0.55)_100%)] opacity-80 transition duration-500 group-hover:opacity-90"

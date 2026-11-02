@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { NAV_CATEGORIES } from "@/lib/categories";
 import {
   CATEGORY_IMAGES_CHANGED_EVENT,
@@ -12,7 +11,12 @@ import {
   setCategoryImageOverride,
   type CategoryImageOverrides,
 } from "@/lib/category-images";
-import { PHOTO_ACCEPTED, readFileAsAppFile } from "@/lib/application-file";
+import {
+  MAX_UPLOAD_SIZE_LABEL,
+  PHOTO_ACCEPTED,
+  readFileAsAppFile,
+} from "@/lib/application-file";
+import { ResolvedMediaImg } from "@/components/media/resolved-media-img";
 import { Button } from "@/components/ui/button";
 import { ImagePlus, RotateCcw } from "lucide-react";
 
@@ -70,8 +74,8 @@ export function CategoryImagesPanel() {
         </h2>
         <p className="mt-1 text-sm text-stone-600">
           Ana sayfadaki kategori bölümünün küçük resimlerini yükleyin veya
-          değiştirin. JPEG, PNG veya WEBP · en fazla 2.5 MB. Değişiklikler
-          kaydedilir ve ana sayfada hemen görünür.
+          değiştirin. JPEG, PNG veya WEBP · en fazla {MAX_UPLOAD_SIZE_LABEL}.
+          Değişiklikler kaydedilir ve ana sayfada hemen görünür.
         </p>
       </div>
 
@@ -109,13 +113,10 @@ export function CategoryImagesPanel() {
               <div className="flex items-start gap-3">
                 <span className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-stone-100 ring-1 ring-stone-200">
                   {src ? (
-                    <Image
+                    <ResolvedMediaImg
                       src={src}
                       alt=""
-                      fill
-                      sizes="64px"
-                      className="object-cover"
-                      unoptimized
+                      className="size-full object-cover"
                     />
                   ) : (
                     <span

@@ -2,6 +2,7 @@ import {
   PHOTO_ACCEPTED,
   readFileAsAppFile,
 } from "@/lib/application-file";
+import { isStoredOrRemotePhoto } from "@/lib/media-store";
 import type { CategorySlug } from "@/lib/types";
 
 /** Default slots for every category except Emlak. */
@@ -16,14 +17,7 @@ export function photoSlotCountForCategory(
 }
 
 export function isRenderablePhoto(src: string | undefined | null): src is string {
-  if (!src) return false;
-  return (
-    src.startsWith("data:image/") ||
-    src.startsWith("http://") ||
-    src.startsWith("https://") ||
-    src.startsWith("blob:") ||
-    src.startsWith("/")
-  );
+  return isStoredOrRemotePhoto(src);
 }
 
 export function emptyPhotoSlots(
@@ -63,7 +57,8 @@ export function resizePhotoSrcs(
 }
 
 /**
- * Build the persisted `photos` array from slot files + any kept existing URLs.
+ * Build the persisted `photos` array from slot files + any kept existing refs.
+ * New files are written to IndexedDB on this device (`idb:hb/…` refs).
  * Empty → one category placeholder so cards/detail still render.
  */
 export async function resolveListingPhotos(opts: {

@@ -1,12 +1,7 @@
+import { isMediaRef, isStoredOrRemotePhoto, resolveMediaUrl } from "@/lib/media-store";
+
 function isScannablePhoto(src: string | undefined | null): src is string {
-  if (!src) return false;
-  return (
-    src.startsWith("data:image/") ||
-    src.startsWith("blob:") ||
-    src.startsWith("http://") ||
-    src.startsWith("https://") ||
-    src.startsWith("/")
-  );
+  return isStoredOrRemotePhoto(src);
 }
 
 /** Human-readable reject reasons (Turkish). */
@@ -107,8 +102,8 @@ function nameLooksNsfw(label: string | undefined | null): boolean {
 }
 
 /**
- * Scan listing photos (data URLs / http(s) / blob) for obscenity/nudity.
- * Placeholder tokens (e.g. "emlak-new") are skipped.
+ * Scan listing photos (device IndexedDB refs / data URLs / http(s) / blob)
+ * for obscenity/nudity. Placeholder tokens (e.g. "emlak-new") are skipped.
  */
 export async function moderateListingImages(
   photos: string[],
@@ -129,10 +124,23 @@ export async function moderateListingImages(
 
     if (!isScannablePhoto(src)) continue;
 
-    const ratio = await skinRatio(src);
-    if (ratio != null && ratio >= 0.42) {
-      flaggedPhotoIndexes.push(i);
-      reason = MODERATION_REASONS.obscenity;
+    let scanUrl = src;
+    let revoke: string | undefined;
+    if (isMediaRef(src)) {
+      const resolved = await resolveMediaUrl(src);
+      if (!resolved) continue;
+      scanUrl = resolved;
+      if (resolved.startsWith("blob:")) revoke = resolved;
+    }
+
+    try {
+      const ratio = await skinRatio(scanUrl);
+      if (ratio != null && ratio >= 0.42) {
+        flaggedPhotoIndexes.push(i);
+        reason = MODERATION_REASONS.obscenity;
+      }
+    } finally {
+      if (revoke) URL.revokeObjectURL(revoke);
     }
   }
 

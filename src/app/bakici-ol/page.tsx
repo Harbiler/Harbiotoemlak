@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
+  MAX_UPLOAD_SIZE_LABEL,
   PHOTO_ACCEPTED,
   hasRequiredIdentityDocs,
   IDENTITY_DOCS_ERROR,
@@ -252,7 +253,8 @@ export default function CaregiverApplyPage() {
               {profileFile ? profileFile.name : "Profil resmi yükle"}
             </span>
             <span className="text-xs text-[var(--muted-foreground)]">
-              JPEG, PNG veya WEBP · en fazla 2.5 MB · güneş gözlüğü yok
+              JPEG, PNG veya WEBP · en fazla {MAX_UPLOAD_SIZE_LABEL} · güneş
+              gözlüğü yok
             </span>
             <Input
               id="profilePhoto"

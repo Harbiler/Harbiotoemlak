@@ -1,4 +1,9 @@
+import { isMediaRef } from "./media-store";
 import type { CategorySlug } from "./types";
+
+function isCategoryImageSrc(src: string): boolean {
+  return src.startsWith("data:image/") || isMediaRef(src);
+}
 
 /** Realistic photo thumbnails for homepage category tiles (`/public/categories/*.jpg`). */
 export const CATEGORY_IMAGE_PATHS: Record<string, string> = {
@@ -34,7 +39,7 @@ export function loadCategoryImageOverrides(): CategoryImageOverrides {
     if (!parsed || typeof parsed !== "object") return {};
     const out: CategoryImageOverrides = {};
     for (const [slug, src] of Object.entries(parsed)) {
-      if (typeof src === "string" && src.startsWith("data:image/")) {
+      if (typeof src === "string" && isCategoryImageSrc(src)) {
         out[slug] = src;
       }
     }
@@ -74,7 +79,7 @@ export function setCategoryImageOverride(
   slug: string,
   dataUrl: string,
 ): void {
-  if (!dataUrl.startsWith("data:image/")) {
+  if (!isCategoryImageSrc(dataUrl)) {
     throw new Error("Geçersiz görsel verisi.");
   }
   const next = { ...loadCategoryImageOverrides(), [slug]: dataUrl };

@@ -3,7 +3,11 @@
 import { useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PHOTO_ACCEPTED } from "@/lib/application-file";
+import {
+  MAX_UPLOAD_SIZE_LABEL,
+  PHOTO_ACCEPTED,
+} from "@/lib/application-file";
+import { useMediaSrc } from "@/hooks/use-media-src";
 import {
   LISTING_PHOTO_SLOT_COUNT,
   photoSlotCountForCategory,
@@ -15,7 +19,7 @@ import { cn } from "@/lib/utils";
 export { LISTING_PHOTO_SLOT_COUNT, photoSlotCountForCategory };
 
 export function listingPhotosHint(slotCount: number): string {
-  return `En fazla ${slotCount} resim. JPEG, PNG veya WEBP · her biri en fazla 2.5 MB`;
+  return `En fazla ${slotCount} resim. JPEG, PNG veya WEBP · her biri en fazla ${MAX_UPLOAD_SIZE_LABEL}`;
 }
 
 function SlotPreview({
@@ -29,6 +33,7 @@ function SlotPreview({
     () => (file ? URL.createObjectURL(file) : null),
     [file],
   );
+  const resolvedExisting = useMediaSrc(file ? undefined : existingSrc);
 
   useEffect(() => {
     return () => {
@@ -36,7 +41,7 @@ function SlotPreview({
     };
   }, [objectUrl]);
 
-  const src = objectUrl ?? existingSrc;
+  const src = objectUrl ?? resolvedExisting;
   if (!src) return null;
   return (
     // eslint-disable-next-line @next/next/no-img-element

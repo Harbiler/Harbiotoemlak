@@ -76,7 +76,7 @@ export interface Listing {
   paidAt?: string;
   fields: Record<string, string | number | boolean>;
   /**
-   * Kimlik ön/arka veya pasaport (localStorage data URL).
+   * Kimlik ön/arka veya pasaport — bytes in device IndexedDB (`idb:hb/…` refs).
    * Bakıcı Arayanlar ilanlarında zorunlu; genel ilan özelliklerinde gösterilmez.
    */
   identityDocs?: ListingIdentityDocs;
@@ -97,6 +97,10 @@ export interface PetHotelApplicationFile {
   name: string;
   type: string;
   size: number;
+  /**
+   * Device-local media ref (`idb:hb/…`) or legacy data URL.
+   * Bytes live in IndexedDB on the signed-in user’s browser/device — not a server.
+   */
   dataUrl: string;
 }
 

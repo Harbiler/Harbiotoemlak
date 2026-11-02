@@ -1,4 +1,5 @@
 import { clearAllCategoryImageOverrides } from "./category-images";
+import { clearAllMedia } from "./media-store";
 import { freeListingValidUntil } from "./listing-validity";
 import {
   LEGACY_SEED_LISTING_IDS,
@@ -326,4 +327,5 @@ export function resetDemoData(): void {
   localStorage.setItem(CAREGIVER_APPS_KEY, JSON.stringify([]));
   localStorage.setItem(VERSION_KEY, SEED_VERSION);
   clearAllCategoryImageOverrides();
+  void clearAllMedia();
 }

@@ -2,7 +2,11 @@
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DOC_ACCEPTED, IDENTITY_DOCS_HINT } from "@/lib/application-file";
+import {
+  DOC_ACCEPTED,
+  IDENTITY_DOCS_HINT,
+  MAX_UPLOAD_SIZE_LABEL,
+} from "@/lib/application-file";
 import { Upload } from "lucide-react";
 
 function FileSlot({
@@ -31,7 +35,7 @@ function FileSlot({
           {shown ? shown : `${label} yükle`}
         </span>
         <span className="text-xs text-[var(--muted-foreground)]">
-          JPEG, PNG, WEBP veya PDF · en fazla 2.5 MB
+          JPEG, PNG, WEBP veya PDF · en fazla {MAX_UPLOAD_SIZE_LABEL}
         </span>
         <Input
           id={id}

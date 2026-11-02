@@ -2,39 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import {
+  DOC_ACCEPTED,
+  MAX_UPLOAD_SIZE_LABEL,
+  readFileAsAppFile,
+} from "@/lib/application-file";
 import { addPetHotelApplication } from "@/lib/storage";
-import type { PetHotelApplicationFile } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, Hotel, Upload } from "lucide-react";
-
-const MAX_FILE_BYTES = 2.5 * 1024 * 1024;
-const ACCEPTED = "image/jpeg,image/png,image/webp,application/pdf";
-
-async function readFileAsAppFile(file: File): Promise<PetHotelApplicationFile> {
-  if (file.size > MAX_FILE_BYTES) {
-    throw new Error(`"${file.name}" 2.5 MB sınırını aşıyor.`);
-  }
-  const allowed = ACCEPTED.split(",");
-  if (!allowed.includes(file.type)) {
-    throw new Error(`"${file.name}" için JPEG, PNG, WEBP veya PDF yükleyin.`);
-  }
-  const dataUrl = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("Dosya okunamadı."));
-    reader.readAsDataURL(file);
-  });
-  return {
-    name: file.name,
-    type: file.type,
-    size: file.size,
-    dataUrl,
-  };
-}
 
 export default function PetHotelApplyPage() {
   const [fullName, setFullName] = useState("");
@@ -205,12 +184,12 @@ export default function PetHotelApplyPage() {
               {idFile ? idFile.name : "Kimlik fotokopisi yükle"}
             </span>
             <span className="text-xs text-[var(--muted-foreground)]">
-              JPEG, PNG, WEBP veya PDF · en fazla 2.5 MB
+              JPEG, PNG, WEBP veya PDF · en fazla {MAX_UPLOAD_SIZE_LABEL}
             </span>
             <Input
               id="idDocument"
               type="file"
-              accept={ACCEPTED}
+              accept={DOC_ACCEPTED}
               className="sr-only"
               onChange={(e) => setIdFile(e.target.files?.[0] ?? null)}
               required
@@ -229,12 +208,12 @@ export default function PetHotelApplyPage() {
               {residenceFile ? residenceFile.name : "İkametgâh belgesi yükle"}
             </span>
             <span className="text-xs text-[var(--muted-foreground)]">
-              JPEG, PNG, WEBP veya PDF · en fazla 2.5 MB
+              JPEG, PNG, WEBP veya PDF · en fazla {MAX_UPLOAD_SIZE_LABEL}
             </span>
             <Input
               id="residenceDocument"
               type="file"
-              accept={ACCEPTED}
+              accept={DOC_ACCEPTED}
               className="sr-only"
               onChange={(e) => setResidenceFile(e.target.files?.[0] ?? null)}
               required
