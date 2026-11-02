@@ -182,6 +182,48 @@ export function ListingFilters({
             : [];
 
   if (isEmlak) {
+    if (collapsible) {
+      return (
+        <div className="hb-surface overflow-hidden" data-hb-detailed-search>
+          <button
+            type="button"
+            aria-expanded={panelOpen}
+            onClick={() => setPanelOpen(!panelOpen)}
+            className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[color-mix(in_oklab,var(--lagoon)_6%,transparent)]"
+            data-hb-detailed-search-toggle
+          >
+            <span>
+              <span className="block text-sm font-semibold text-[var(--lagoon)]">
+                Detaylı arama
+              </span>
+              <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">
+                {panelOpen
+                  ? "İlan tipi, konut, oda, fiyat ve konuma göre daraltın."
+                  : "İlan tipi, konut, oda, fiyat ve konuma göre daraltın."}
+              </span>
+            </span>
+            {panelOpen ? (
+              <ChevronUp className="size-5 shrink-0 text-[var(--lagoon)]" />
+            ) : (
+              <ChevronDown className="size-5 shrink-0 text-[var(--lagoon)]" />
+            )}
+          </button>
+          {panelOpen ? (
+            <div
+              className="border-t border-[color-mix(in_oklab,var(--ink)_8%,transparent)] p-4"
+              data-hb-detailed-search-panel
+            >
+              <EmlakFilters
+                value={value}
+                onChange={onChange}
+                onReset={onReset}
+                embedded
+              />
+            </div>
+          ) : null}
+        </div>
+      );
+    }
     return <EmlakFilters value={value} onChange={onChange} onReset={onReset} />;
   }
 
@@ -364,7 +406,10 @@ export function ListingFilters({
     </div>
   );
 
-  if (collapsible && showDetailed) {
+  if (collapsible) {
+    const closedHint = showDetailed
+      ? "Marka, model, yıl, fiyat ve konuma göre daraltın."
+      : "Konum, fiyat ve satıcı tipine göre daraltın.";
     return (
       <div className="hb-surface overflow-hidden" data-hb-detailed-search>
         <button
@@ -379,7 +424,7 @@ export function ListingFilters({
               Detaylı arama
             </span>
             <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">
-              {panelOpen ? hint : "Marka, model, yıl, fiyat ve konuma göre daraltın."}
+              {panelOpen ? (showDetailed ? hint : closedHint) : closedHint}
             </span>
           </span>
           {panelOpen ? (

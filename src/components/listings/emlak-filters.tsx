@@ -57,22 +57,27 @@ export function EmlakFilters({
   value,
   onChange,
   onReset,
+  embedded = false,
 }: {
   value: FilterState;
   onChange: (next: FilterState) => void;
   onReset: () => void;
+  /** When true, omit outer surface/header (parent supplies Detaylı arama chrome). */
+  embedded?: boolean;
 }) {
   const [gelismis, setGelismis] = useState(false);
   const d = value.details;
 
-  return (
-    <div className="hb-surface space-y-4 p-4">
-      <div>
-        <p className="text-sm font-semibold text-[var(--ink)]">Emlak ara</p>
-        <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-          İstediğiniz özellikleri seçin, sonuçlar anında güncellenir.
-        </p>
-      </div>
+  const body = (
+    <>
+      {!embedded && (
+        <div>
+          <p className="text-sm font-semibold text-[var(--ink)]">Emlak ara</p>
+          <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+            İstediğiniz özellikleri seçin, sonuçlar anında güncellenir.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <FieldSelect
@@ -353,6 +358,12 @@ export function EmlakFilters({
           Filtreleri temizle
         </Button>
       </div>
-    </div>
+    </>
   );
+
+  if (embedded) {
+    return <div className="space-y-4">{body}</div>;
+  }
+
+  return <div className="hb-surface space-y-4 p-4">{body}</div>;
 }
