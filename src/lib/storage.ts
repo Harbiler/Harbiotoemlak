@@ -1,4 +1,11 @@
-import { SEED_LISTINGS, SEED_USERS } from "./seed";
+import { clearAllCategoryImageOverrides } from "./category-images";
+import { clearAllMedia } from "./media-store";
+import { freeListingValidUntil } from "./listing-validity";
+import {
+  LEGACY_SEED_LISTING_IDS,
+  SEED_LISTINGS,
+  SEED_USERS,
+} from "./seed";
 import type {
   CaregiverApplication,
   Listing,
@@ -9,10 +16,34 @@ import type {
 const USERS_KEY = "harbidenbak.users";
 const LISTINGS_KEY = "harbidenbak.listings";
 const SESSION_KEY = "harbidenbak.session";
+const REMEMBER_KEY = "harbidenbak.remember";
+const REMEMBERED_EMAIL_KEY = "harbidenbak.rememberedEmail";
 const PET_HOTEL_APPS_KEY = "harbidenbak.petHotelApplications";
 const CAREGIVER_APPS_KEY = "harbidenbak.caregiverApplications";
 const VERSION_KEY = "harbidenbak.seedVersion";
-const SEED_VERSION = "13";
+/** Bumped for paymentStatus backfill (admin Ödemeler) while keeping user rows. */
+const SEED_VERSION = "21";
+
+const LEGACY_SEED_ID_SET = new Set(LEGACY_SEED_LISTING_IDS);
+
+function stripLegacySeedListings(listings: Listing[]): Listing[] {
+  return listings.filter((l) => !LEGACY_SEED_ID_SET.has(l.id));
+}
+
+function ensureListingValidity(listing: Listing): Listing {
+  let next = listing;
+  if (!next.validUntil) {
+    next = {
+      ...next,
+      validUntil: freeListingValidUntil(next.createdAt),
+    };
+  }
+  // Launch rule: missing paymentStatus → free for the validUntil window.
+  if (!next.paymentStatus) {
+    next = { ...next, paymentStatus: "free" };
+  }
+  return next;
+}
 
 function canUseStorage(): boolean {
   return typeof window !== "undefined" && !!window.localStorage;
@@ -22,8 +53,23 @@ export function ensureSeedData(): void {
   if (!canUseStorage()) return;
   const version = localStorage.getItem(VERSION_KEY);
   if (version !== SEED_VERSION) {
-    localStorage.setItem(USERS_KEY, JSON.stringify(SEED_USERS));
-    localStorage.setItem(LISTINGS_KEY, JSON.stringify(SEED_LISTINGS));
+    if (!localStorage.getItem(USERS_KEY)) {
+      localStorage.setItem(USERS_KEY, JSON.stringify(SEED_USERS));
+    }
+    const rawListings = localStorage.getItem(LISTINGS_KEY);
+    if (rawListings) {
+      try {
+        const parsed = JSON.parse(rawListings) as Listing[];
+        localStorage.setItem(
+          LISTINGS_KEY,
+          JSON.stringify(stripLegacySeedListings(parsed)),
+        );
+      } catch {
+        localStorage.setItem(LISTINGS_KEY, JSON.stringify(SEED_LISTINGS));
+      }
+    } else {
+      localStorage.setItem(LISTINGS_KEY, JSON.stringify(SEED_LISTINGS));
+    }
     localStorage.setItem(VERSION_KEY, SEED_VERSION);
     return;
   }
@@ -59,9 +105,19 @@ export function loadListings(): Listing[] {
     ) as Listing[];
     let changed = false;
     const next = listings.map((l) => {
-      if (l.status !== "pending") return l;
-      changed = true;
-      return { ...l, status: "approved" as const };
+      let row = ensureListingValidity(l);
+      if (row !== l) changed = true;
+      if (row.status === "pending") {
+        changed = true;
+        // Keep auto-approve for pending only; rejected stays rejected (moderation).
+        row = {
+          ...row,
+          status: "approved" as const,
+          validUntil: row.validUntil || freeListingValidUntil(),
+          rejectReason: undefined,
+        };
+      }
+      return row;
     });
     if (changed) saveListings(next);
     return next;
@@ -72,18 +128,67 @@ export function loadListings(): Listing[] {
 
 export function saveListings(listings: Listing[]): void {
   if (!canUseStorage()) return;
-  localStorage.setItem(LISTINGS_KEY, JSON.stringify(listings));
+  try {
+    localStorage.setItem(LISTINGS_KEY, JSON.stringify(listings));
+  } catch (err) {
+    const quota =
+      err instanceof DOMException &&
+      (err.name === "QuotaExceededError" || err.code === 22);
+    throw new Error(
+      quota
+        ? "Tarayıcı depolama alanı doldu. Daha küçük kimlik dosyaları deneyin veya eski ilanları silin."
+        : err instanceof Error
+          ? err.message
+          : "İlan kaydedilemedi.",
+    );
+  }
+}
+
+export function loadRememberPreference(): boolean {
+  if (!canUseStorage()) return true;
+  const raw = localStorage.getItem(REMEMBER_KEY);
+  if (raw === null) return true;
+  return raw === "1";
+}
+
+export function saveRememberPreference(remember: boolean): void {
+  if (!canUseStorage()) return;
+  localStorage.setItem(REMEMBER_KEY, remember ? "1" : "0");
+  if (!remember) localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+}
+
+export function loadRememberedEmail(): string | null {
+  if (!canUseStorage()) return null;
+  if (!loadRememberPreference()) return null;
+  return localStorage.getItem(REMEMBERED_EMAIL_KEY);
+}
+
+export function saveRememberedEmail(email: string | null): void {
+  if (!canUseStorage()) return;
+  if (email) localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
+  else localStorage.removeItem(REMEMBERED_EMAIL_KEY);
 }
 
 export function loadSessionUserId(): string | null {
   if (!canUseStorage()) return null;
-  return localStorage.getItem(SESSION_KEY);
+  return localStorage.getItem(SESSION_KEY) ?? sessionStorage.getItem(SESSION_KEY);
 }
 
-export function saveSessionUserId(userId: string | null): void {
+export function saveSessionUserId(userId: string | null, remember?: boolean): void {
   if (!canUseStorage()) return;
-  if (userId) localStorage.setItem(SESSION_KEY, userId);
-  else localStorage.removeItem(SESSION_KEY);
+  if (!userId) {
+    localStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
+    return;
+  }
+  const persist = remember ?? loadRememberPreference();
+  if (persist) {
+    localStorage.setItem(SESSION_KEY, userId);
+    sessionStorage.removeItem(SESSION_KEY);
+  } else {
+    sessionStorage.setItem(SESSION_KEY, userId);
+    localStorage.removeItem(SESSION_KEY);
+  }
 }
 
 export function loadPetHotelApplications(): PetHotelApplication[] {
@@ -209,6 +314,11 @@ export function updateCaregiverApplicationStatus(
   saveCaregiverApplications(apps);
 }
 
+export function deleteCaregiverApplication(id: string): void {
+  const apps = loadCaregiverApplications().filter((a) => a.id !== id);
+  saveCaregiverApplications(apps);
+}
+
 export function resetDemoData(): void {
   if (!canUseStorage()) return;
   localStorage.setItem(USERS_KEY, JSON.stringify(SEED_USERS));
@@ -216,4 +326,6 @@ export function resetDemoData(): void {
   localStorage.setItem(PET_HOTEL_APPS_KEY, JSON.stringify([]));
   localStorage.setItem(CAREGIVER_APPS_KEY, JSON.stringify([]));
   localStorage.setItem(VERSION_KEY, SEED_VERSION);
+  clearAllCategoryImageOverrides();
+  void clearAllMedia();
 }

@@ -4,11 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { getCategory } from "@/lib/categories";
-import { formatDate, formatPrice } from "@/lib/format";
+import { formatDate, formatDateShort, formatPrice } from "@/lib/format";
+import { freeListingCopy, isListingExpired } from "@/lib/listing-validity";
 import { listingNumber } from "@/lib/types";
 import { useAuth } from "@/context/auth-context";
 import { useListings } from "@/context/listings-context";
 import { useUserPrefs } from "@/context/user-prefs-context";
+import { AddressMap } from "@/components/listings/address-map";
 import { PhotoPlaceholder } from "@/components/listings/photo-placeholder";
 import { SellerBadge } from "@/components/listings/seller-badge";
 import { ListingCard } from "@/components/listings/listing-card";
@@ -21,7 +23,9 @@ import {
   isPetHotelListing,
   PET_HOTEL_AVAILABILITY,
 } from "@/lib/pet-hotel-availability";
+import { photoSlotCountForCategory } from "@/lib/listing-photos";
 import { cn } from "@/lib/utils";
+import { listingEditPath } from "@/lib/listing-path";
 import {
   Heart,
   MapPin,
@@ -31,6 +35,12 @@ import {
   Shield,
   Printer,
 } from "lucide-react";
+
+/** Keep digits and leading + for tel: links. */
+function telHref(phone: string): string {
+  const cleaned = phone.replace(/[^\d+]/g, "");
+  return cleaned ? `tel:${cleaned}` : "tel:";
+}
 
 export function ListingDetailClient({ id }: { id: string }) {
   const searchParams = useSearchParams();
@@ -118,11 +128,26 @@ export function ListingDetailClient({ id }: { id: string }) {
       )}
 
       {listing.status !== "approved" && (
-        <Alert className="mb-6">
+        <Alert
+          className={
+            listing.status === "rejected"
+              ? "mb-6 border-red-300 bg-red-50"
+              : "mb-6"
+          }
+        >
           <AlertTitle>
-            Durum: {listing.status === "pending" ? "Beklemede" : "Gizli"}
+            Durum:{" "}
+            {listing.status === "pending"
+              ? "Beklemede"
+              : listing.status === "rejected"
+                ? "Reddedildi"
+                : "Gizli"}
           </AlertTitle>
-          <AlertDescription>Bu ilanı yalnızca siz ve yöneticiler görebilir.</AlertDescription>
+          <AlertDescription>
+            {listing.status === "rejected" && listing.rejectReason
+              ? `İlanınız şu neden ile yayınlanamadı: ${listing.rejectReason}`
+              : "Bu ilanı yalnızca siz ve yöneticiler görebilir."}
+          </AlertDescription>
         </Alert>
       )}
 
@@ -150,9 +175,10 @@ export function ListingDetailClient({ id }: { id: string }) {
             large
             className="aspect-[16/10] w-full rounded-2xl"
             key={photos[activePhoto]}
+            src={photos[activePhoto]}
           />
           <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-5">
-            {photos.slice(0, 5).map((p, i) => (
+            {photos.slice(0, photoSlotCountForCategory(listing.category)).map((p, i) => (
               <button
                 key={`${p}-${i}`}
                 type="button"
@@ -164,6 +190,7 @@ export function ListingDetailClient({ id }: { id: string }) {
                 <PhotoPlaceholder
                   category={listing.category}
                   className="aspect-video"
+                  src={p}
                 />
               </button>
             ))}
@@ -287,14 +314,29 @@ export function ListingDetailClient({ id }: { id: string }) {
 
           <div className="hb-surface mt-6 p-5">
             <h2 className="font-semibold text-[var(--ink)]">Konum</h2>
-            <p className="mt-2 flex items-start gap-2 text-sm text-[var(--muted-foreground)]">
-              <MapPin className="mt-0.5 size-4 shrink-0 text-[var(--lagoon)]" />
-              {listing.district}, {listing.city} — harita entegrasyonu demo sürümünde metin olarak
-              gösterilir.
-            </p>
-            <div className="mt-4 flex h-36 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#d9ecea,#e7eef1)] text-sm text-[var(--muted-foreground)]">
-              {listing.city} / {listing.district} konum önizlemesi
-            </div>
+            {listing.category === "vasita" &&
+            String(listing.fields.adres ?? "").trim() ? (
+              <div className="mt-3">
+                <AddressMap
+                  address={String(listing.fields.adres)}
+                  city={listing.city}
+                  district={listing.district}
+                />
+              </div>
+            ) : (
+              <>
+                <p className="mt-2 flex items-start gap-2 text-sm text-[var(--muted-foreground)]">
+                  <MapPin className="mt-0.5 size-4 shrink-0 text-[var(--lagoon)]" />
+                  {listing.district}, {listing.city}
+                  {listing.fields.adres
+                    ? ` — ${String(listing.fields.adres)}`
+                    : " — harita entegrasyonu demo sürümünde metin olarak gösterilir."}
+                </p>
+                <div className="mt-4 flex h-36 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#d9ecea,#e7eef1)] text-sm text-[var(--muted-foreground)]">
+                  {listing.city} / {listing.district} konum önizlemesi
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -304,6 +346,16 @@ export function ListingDetailClient({ id }: { id: string }) {
             <p className="hb-display mt-1 text-3xl font-bold text-[var(--ink)]">
               {formatPrice(listing.price)}
             </p>
+            <div className="mt-3 rounded-lg bg-[color-mix(in_oklab,var(--mist)_65%,white)] px-3 py-2 text-xs text-[var(--ink)]">
+              <p className="font-semibold text-[var(--lagoon)]">{freeListingCopy.badge}</p>
+              <p className="mt-0.5 text-[var(--muted-foreground)]">
+                {listing.validUntil
+                  ? isListingExpired(listing.validUntil)
+                    ? `Geçerlilik süresi doldu (${formatDateShort(listing.validUntil)})`
+                    : `Geçerli süre: ${formatDateShort(listing.validUntil)} tarihine kadar`
+                  : freeListingCopy.detail}
+              </p>
+            </div>
             <div className="mt-5 border-t border-[color-mix(in_oklab,var(--ink)_8%,transparent)] pt-4">
               <div className="flex items-start justify-between gap-2">
                 <div>
@@ -316,20 +368,38 @@ export function ListingDetailClient({ id }: { id: string }) {
               <p className="mt-3 text-xs text-[var(--muted-foreground)]">
                 İlan no: {ilanNo} · {formatDate(listing.createdAt)}
               </p>
-              <Button
-                className="mt-4 w-full bg-[var(--lagoon)] hover:bg-[#be185d]"
-                onClick={() => setShowPhone(true)}
-              >
-                <Phone className="size-4" />
-                {showPhone ? listing.contactPhone : "Telefonu göster"}
-              </Button>
+              {listing.category === "vasita" && showPhone ? (
+                <Button
+                  asChild
+                  className="mt-4 w-full bg-[var(--lagoon)] hover:bg-[#be185d]"
+                  data-hb-phone-action="dial"
+                >
+                  <a href={telHref(listing.contactPhone)}>
+                    <Phone className="size-4" />
+                    {listing.contactPhone}
+                  </a>
+                </Button>
+              ) : (
+                <Button
+                  className="mt-4 w-full bg-[var(--lagoon)] hover:bg-[#be185d]"
+                  data-hb-phone-action="reveal"
+                  onClick={() => setShowPhone(true)}
+                >
+                  <Phone className="size-4" />
+                  {listing.category === "vasita"
+                    ? "Numarayı göster"
+                    : showPhone
+                      ? listing.contactPhone
+                      : "Telefonu göster"}
+                </Button>
+              )}
             </div>
           </div>
 
           {canEdit && (
             <div className="flex flex-col gap-2">
               <Button asChild variant="outline">
-                <Link href={`/ilan/${listing.id}/duzenle`}>
+                <Link href={listingEditPath(listing.id)}>
                   <Pencil className="size-4" />
                   İlanı düzenle
                 </Link>

@@ -1,5 +1,9 @@
 import type { BrandCatalog } from "@/lib/brand-models";
-import { MOTORSIKLET_BRANDS, VASITA_BRANDS } from "@/lib/brand-models";
+import {
+  MOTORSIKLET_BRANDS,
+  VASITA_BRANDS,
+  registerBrandCatalog,
+} from "@/lib/brand-models";
 
 export type VasitaSubSlug =
   | "otomobil"
@@ -42,66 +46,86 @@ function pickModels(
 const ELEKTRIKLI_BRANDS: BrandCatalog = {
   Tesla: ["Model 3", "Model Y", "Model S", "Model X"],
   Togg: ["T10X", "T10F"],
-  BMW: ["i4", "iX"],
-  "Mercedes-Benz": ["EQC"],
-  Volkswagen: ["ID.3", "ID.4"],
-  Hyundai: ["Ioniq 5", "Kona"],
-  Kia: ["EV6", "Niro"],
-  Volvo: ["C40", "XC40"],
+  BYD: ["Atto 3", "Dolphin", "Seal", "Seal U", "Sealion 7", "Han", "Tang"],
+  BMW: ["i4", "iX", "iX1", "iX3"],
+  "Mercedes-Benz": ["EQA", "EQB", "EQC", "EQE", "EQS"],
+  Volkswagen: ["ID.3", "ID.4", "ID.7"],
+  Hyundai: ["Ioniq 5", "Ioniq 6", "Kona"],
+  Kia: ["EV6", "EV9", "Niro"],
+  Volvo: ["C40", "XC40", "EX30", "EX90"],
   Porsche: ["Taycan"],
   MG: ["4", "5", "Marvel R"],
-  Cupra: ["Born"],
-  Nissan: ["Leaf"],
+  Cupra: ["Born", "Tavascan"],
+  Nissan: ["Leaf", "Ariya"],
   Dacia: ["Spring"],
-  Audi: ["e-tron"],
+  Audi: ["e-tron", "e-tron GT"],
   Mini: ["Cooper"],
   Opel: ["Corsa", "Mokka"],
   Peugeot: ["208", "2008"],
-  Renault: ["Megane"],
+  Renault: ["Megane E-Tech", "Zoe"],
   Fiat: ["500"],
-  Citroën: ["Ami", "C4"],
+  Citroën: ["Ami", "ë-C4"],
+  Skoda: ["Enyaq"],
+  Ford: ["Mustang Mach-E"],
+  Toyota: ["bZ4X"],
+  Honda: ["e:Ny1"],
+  Smart: ["#1", "#3"],
+  Skywell: ["ET5", "BE11"],
+  Jaguar: ["I-Pace"],
+  Lexus: ["UX", "RZ"],
 };
 
 const SUV_PICKUP_BRANDS: BrandCatalog = pickModels(VASITA_BRANDS, {
-  Audi: ["Q3", "Q5", "Q7", "Q8"],
-  BMW: ["X1", "X3", "X5", "X6"],
-  "Mercedes-Benz": ["GLA", "GLC", "GLE"],
-  Volkswagen: ["Tiguan", "T-Roc", "Touareg"],
+  Audi: ["Q2", "Q3", "Q5", "Q7", "Q8"],
+  BMW: ["X1", "X2", "X3", "X4", "X5", "X6", "X7"],
+  "Mercedes-Benz": ["GLA", "GLB", "GLC", "GLE", "GLS", "G Serisi"],
+  Volkswagen: ["Tiguan", "T-Roc", "T-Cross", "Touareg", "Taigo"],
   Renault: ["Captur", "Kadjar", "Austral"],
-  Ford: ["Kuga", "Puma", "Ranger"],
-  Toyota: ["C-HR", "RAV4", "Hilux", "Land Cruiser"],
-  Honda: ["HR-V", "CR-V"],
-  Hyundai: ["Tucson", "Santa Fe", "Bayon", "Kona"],
-  Kia: ["Sportage", "Sorento", "Stonic"],
-  Opel: ["Mokka", "Crossland", "Grandland"],
+  Ford: ["Kuga", "Puma", "EcoSport", "Escape", "Explorer", "Ranger", "Mustang Mach-E"],
+  Toyota: ["C-HR", "RAV4", "Corolla Cross", "Yaris Cross", "Hilux", "Land Cruiser"],
+  Honda: ["HR-V", "CR-V", "ZR-V"],
+  Hyundai: ["Tucson", "Santa Fe", "Bayon", "Kona", "ix35"],
+  Kia: ["Sportage", "Sorento", "Stonic", "XCeed", "EV9"],
+  Opel: ["Mokka", "Crossland", "Grandland", "Frontera"],
   Peugeot: ["2008", "3008", "5008"],
-  Citroën: ["C5 Aircross"],
+  Citroën: ["C3 Aircross", "C5 Aircross"],
   Skoda: ["Kamiq", "Karoq", "Kodiaq"],
   Seat: ["Arona", "Ateca", "Tarraco"],
-  Cupra: ["Formentor", "Ateca"],
-  Volvo: ["XC40", "XC60", "XC90"],
+  Cupra: ["Formentor", "Ateca", "Tavascan"],
+  Volvo: ["XC40", "XC60", "XC90", "EX30", "EX90"],
   Dacia: ["Duster", "Jogger"],
-  Nissan: ["Juke", "Qashqai", "X-Trail", "Navara"],
-  Mazda: ["CX-3", "CX-30", "CX-5", "CX-60"],
-  Mitsubishi: ["ASX", "Eclipse Cross", "Outlander", "L200"],
+  Nissan: ["Juke", "Qashqai", "X-Trail", "Navara", "Pathfinder"],
+  Mazda: ["CX-3", "CX-30", "CX-5", "CX-60", "CX-7"],
+  Mitsubishi: ["ASX", "Eclipse Cross", "Outlander", "Pajero", "L200"],
   Suzuki: ["Vitara", "S-Cross", "Jimny"],
-  Jeep: ["Renegade", "Compass", "Avenger", "Wrangler", "Grand Cherokee"],
+  Jeep: ["Renegade", "Compass", "Avenger", "Wrangler", "Grand Cherokee", "Cherokee", "Gladiator"],
   "Land Rover": [
     "Defender",
     "Discovery",
     "Discovery Sport",
     "Range Rover Evoque",
+    "Range Rover Velar",
     "Range Rover Sport",
     "Range Rover",
+    "Freelander",
   ],
   Porsche: ["Cayenne", "Macan"],
   Tesla: ["Model Y", "Model X"],
   Togg: ["T10X"],
   SsangYong: ["Tivoli", "Korando", "Rexton", "Musso"],
-  Chery: ["Omoda 5", "Tiggo 7", "Tiggo 8"],
+  Chery: ["Omoda 5", "Tiggo 7", "Tiggo 7 Pro", "Tiggo 8", "Tiggo 8 Pro"],
   MG: ["ZS", "HS"],
-  Fiat: ["Egea Cross", "Fullback"],
+  Fiat: ["Egea Cross", "Fullback", "500X"],
   Chevrolet: ["Captiva", "Trax"],
+  BYD: ["Atto 3", "Seal U", "Sealion 7", "Tang"],
+  Subaru: ["XV", "Crosstrek", "Forester", "Outback"],
+  Lexus: ["NX", "RX", "UX", "LBX", "GX", "LX"],
+  Jaguar: ["F-Pace", "E-Pace", "I-Pace"],
+  DS: ["DS 3", "DS 7"],
+  Geely: ["Coolray", "Okavango"],
+  Skywell: ["ET5"],
+  DFSK: ["Glory 560", "Glory 580", "Seres 3"],
+  Smart: ["#1", "#3"],
 });
 
 const MINIVAN_BRANDS: BrandCatalog = {
@@ -185,9 +209,10 @@ const KLASIK_BRANDS: BrandCatalog = {
   Mini: ["Classic Mini", "Moke"],
   Triumph: ["TR6", "Spitfire", "Stag"],
   MG: ["MGB", "Midget", "TD"],
-  Anadol: ["A1", "A2", "STC-16"],
-  Tofaş: ["Murat 124", "Serçe", "Şahin", "Doğan"],
+  Anadol: ["A1", "A2", "STC-16", "Böcek"],
+  Tofaş: ["Şahin", "Doğan", "Kartal", "Serçe", "Murat 124", "Murat 131", "Tempra", "Tipo"],
   Renault: ["12", "R5", "R4", "Toros"],
+  Lada: ["Samara", "Vega", "Niva"],
 };
 
 const HAVA_BRANDS: BrandCatalog = {
@@ -253,6 +278,7 @@ export const VASITA_SUBCATEGORIES: VasitaSubcategory[] = [
     slug: "motorsiklet",
     name: "Motorsiklet",
     description: "Motosiklet, scooter ve naked modeller",
+    // Brand→model map (Yamaha→MT-07…); never reuse VASITA_BRANDS / car models.
     brands: MOTORSIKLET_BRANDS,
   },
   {
@@ -346,4 +372,9 @@ export function allVasitaBrandCatalogs(): Record<string, BrandCatalog> {
     out[vasitaCatalogKey(sub.slug)] = sub.brands;
   }
   return out;
+}
+
+// Register vasita:<sub> keys (incl. vasita:motorsiklet) for brandCatalogFor lookups.
+for (const sub of VASITA_SUBCATEGORIES) {
+  registerBrandCatalog(vasitaCatalogKey(sub.slug), sub.brands);
 }

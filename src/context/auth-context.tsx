@@ -12,16 +12,20 @@ import {
 import {
   loadSessionUserId,
   loadUsers,
+  saveRememberPreference,
+  saveRememberedEmail,
   saveSessionUserId,
   saveUsers,
 } from "@/lib/storage";
-import type { KurumsalType, MembershipKind, User } from "@/lib/types";
+import { isValidTcKimlikNo, type KurumsalType, type MembershipKind, type User } from "@/lib/types";
 
 interface RegisterInput {
   email: string;
   password: string;
   name: string;
   phone: string;
+  tcKimlikNo: string;
+  address: string;
   membershipKind: MembershipKind;
   kurumsalType?: KurumsalType;
   companyName?: string;
@@ -31,7 +35,11 @@ interface AuthContextValue {
   user: User | null;
   users: User[];
   ready: boolean;
-  login: (email: string, password: string) => { ok: true } | { ok: false; error: string };
+  login: (
+    email: string,
+    password: string,
+    remember?: boolean,
+  ) => { ok: true } | { ok: false; error: string };
   register: (input: RegisterInput) => { ok: true } | { ok: false; error: string };
   logout: () => void;
   updateUser: (id: string, patch: Partial<User>) => void;
@@ -51,7 +59,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const sid = loadSessionUserId();
     if (sid) {
       const found = all.find((u) => u.id === sid) ?? null;
-      setUser(found);
+      if (found?.restricted) {
+        saveSessionUserId(null);
+        setUser(null);
+      } else {
+        setUser(found);
+      }
     }
     setReady(true);
   }, []);
@@ -62,13 +75,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(
-    (email: string, password: string) => {
+    (email: string, password: string, remember = true) => {
       const found = users.find(
         (u) => u.email.toLowerCase() === email.trim().toLowerCase() && u.password === password,
       );
       if (!found) return { ok: false as const, error: "E-posta veya şifre hatalı." };
+      if (found.restricted) {
+        return {
+          ok: false as const,
+          error: "Hesabınız kısıtlanmıştır. Destek ile iletişime geçin.",
+        };
+      }
+      saveRememberPreference(remember);
+      if (remember) saveRememberedEmail(found.email);
+      else saveRememberedEmail(null);
       setUser(found);
-      saveSessionUserId(found.id);
+      saveSessionUserId(found.id, remember);
       return { ok: true as const };
     },
     [users],
@@ -82,12 +104,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (input.membershipKind === "kurumsal" && !input.kurumsalType) {
         return { ok: false as const, error: "Kurumsal üyelik tipi seçin (Galeri veya Emlak)." };
       }
+      const tc = input.tcKimlikNo.trim();
+      if (!isValidTcKimlikNo(tc)) {
+        return { ok: false as const, error: "T.C. Kimlik No 11 haneli olmalıdır." };
+      }
+      const address = input.address.trim();
+      if (!address) {
+        return { ok: false as const, error: "Adres zorunludur." };
+      }
       const newUser: User = {
         id: `u-${Date.now()}`,
         email: input.email.trim().toLowerCase(),
         password: input.password,
         name: input.name.trim(),
         phone: input.phone.trim(),
+        tcKimlikNo: tc,
+        address,
         role: "user",
         membershipKind: input.membershipKind,
         kurumsalType: input.membershipKind === "kurumsal" ? input.kurumsalType : undefined,

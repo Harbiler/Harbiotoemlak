@@ -1,12 +1,41 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { NAV_CATEGORIES, getCategory, type CategoryField } from "@/lib/categories";
+import {
+  CATEGORIES,
+  NAV_CATEGORIES,
+  getCategory,
+  type CategoryField,
+} from "@/lib/categories";
 import { CITY_NAMES, CITIES } from "@/lib/cities";
 import { useAuth } from "@/context/auth-context";
 import { useListings } from "@/context/listings-context";
-import type { CategorySlug, Listing, ListingStatus, MembershipKind } from "@/lib/types";
+import type {
+  CategorySlug,
+  Listing,
+  ListingIdentityDocs,
+  ListingStatus,
+  MembershipKind,
+} from "@/lib/types";
+import { formatDateShort } from "@/lib/format";
+import {
+  freeListingCopy,
+  freeListingValidUntil,
+} from "@/lib/listing-validity";
+import {
+  hasRequiredIdentityDocs,
+  IDENTITY_DOCS_ERROR,
+  readFileAsAppFile,
+} from "@/lib/application-file";
+import {
+  emptyPhotoSlots,
+  isRenderablePhoto,
+  photoSlotCountForCategory,
+  resolveListingPhotos,
+  resizePhotoFiles,
+  resizePhotoSrcs,
+} from "@/lib/listing-photos";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,12 +48,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AddressMap } from "@/components/listings/address-map";
 import { BrandModelFields } from "@/components/listings/brand-model-fields";
+import { IdentityDocsFields } from "@/components/listings/identity-docs-fields";
+import { PhotoUploadFields } from "@/components/listings/photo-upload-fields";
 import { supportsBrandModelSearch } from "@/lib/brand-models";
 import {
   getVasitaSubcategory,
   VASITA_SUBCATEGORIES,
 } from "@/lib/vasita-subcategories";
+import { listingPath } from "@/lib/listing-path";
+import {
+  gateListingPublish,
+  rejectionUserMessage,
+} from "@/lib/listing-publish-moderation";
+import { loadUsers } from "@/lib/storage";
+
+function padExistingPhotos(
+  photos: string[] | undefined,
+  category: CategorySlug | string,
+): (string | undefined)[] {
+  const count = photoSlotCountForCategory(category);
+  return Array.from({ length: count }, (_, i) => {
+    const p = photos?.[i];
+    return isRenderablePhoto(p) ? p : undefined;
+  });
+}
 
 interface FormState {
   category: CategorySlug;
@@ -139,15 +188,52 @@ export function ListingForm({
   );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
+  const [idBackFile, setIdBackFile] = useState<File | null>(null);
+  const [passportFile, setPassportFile] = useState<File | null>(null);
+  const [photoFiles, setPhotoFiles] = useState<(File | null)[]>(() =>
+    emptyPhotoSlots(listing?.category ?? defaultCategory ?? "emlak"),
+  );
+  const [existingPhotoSrcs, setExistingPhotoSrcs] = useState<
+    (string | undefined)[]
+  >(() =>
+    padExistingPhotos(
+      listing?.photos,
+      listing?.category ?? defaultCategory ?? "emlak",
+    ),
+  );
 
   const category = getCategory(form.category);
   const districts = CITIES[form.city] ?? [];
+  const needsIdentityDocs = form.category === "bakici-arayanlar";
+  const photoSlotCount = photoSlotCountForCategory(form.category);
 
   const categoryFields = useMemo(() => category?.fields ?? [], [category]);
+
+  useEffect(() => {
+    setPhotoFiles((prev) => resizePhotoFiles(prev, photoSlotCount));
+    setExistingPhotoSrcs((prev) => resizePhotoSrcs(prev, photoSlotCount));
+  }, [photoSlotCount]);
 
   function setField(key: string, value: string) {
     setForm((f) => ({ ...f, fields: { ...f.fields, [key]: value } }));
   }
+
+  const categorySelectItems = useMemo(() => {
+    const map = new Map(NAV_CATEGORIES.map((c) => [c.slug, c.name]));
+    // Keep legacy / hidden categories (Motorsiklet, Hayvanlar, Özel Ders) selectable when editing.
+    const current = getCategory(form.category);
+    if (current && !map.has(current.slug)) {
+      map.set(current.slug, current.name);
+    }
+    if (adminMode) {
+      for (const c of CATEGORIES) {
+        if (!map.has(c.slug)) map.set(c.slug, c.name);
+      }
+    }
+    return Object.fromEntries(map);
+  }, [form.category, adminMode]);
 
   function validate(): string | null {
     if (!form.title.trim()) return "Başlık zorunludur.";
@@ -166,10 +252,42 @@ export function ListingForm({
         return `${field.label} alanı zorunludur.`;
       }
     }
+    if (needsIdentityDocs) {
+      const existing = listing?.identityDocs;
+      const ok = hasRequiredIdentityDocs({
+        idFront: idFrontFile ?? existing?.idFront,
+        idBack: idBackFile ?? existing?.idBack,
+        passport: passportFile ?? existing?.passport,
+      });
+      if (!ok) return IDENTITY_DOCS_ERROR;
+    }
     return null;
   }
 
-  function onSubmit(e: React.FormEvent) {
+  async function resolveIdentityDocs(): Promise<
+    ListingIdentityDocs | undefined
+  > {
+    if (!needsIdentityDocs) return undefined;
+    const existing = listing?.identityDocs;
+    const [idFront, idBack, passport] = await Promise.all([
+      idFrontFile
+        ? readFileAsAppFile(idFrontFile)
+        : Promise.resolve(existing?.idFront),
+      idBackFile
+        ? readFileAsAppFile(idBackFile)
+        : Promise.resolve(existing?.idBack),
+      passportFile
+        ? readFileAsAppFile(passportFile)
+        : Promise.resolve(existing?.passport),
+    ]);
+    const docs: ListingIdentityDocs = {};
+    if (idFront) docs.idFront = idFront;
+    if (idBack) docs.idBack = idBack;
+    if (passport) docs.passport = passport;
+    return docs;
+  }
+
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) {
       router.push("/giris?next=/ilan/yeni");
@@ -183,47 +301,111 @@ export function ListingForm({
     setSaving(true);
     setError(null);
 
-    const parsedFields: Record<string, string | number | boolean> = {};
-    for (const field of categoryFields) {
-      const raw = form.fields[field.key];
-      if (raw === undefined || raw === "") continue;
-      parsedFields[field.key] = field.type === "number" ? Number(raw) : raw;
-    }
-    if (form.category === "vasita" && form.fields.altKategori) {
-      parsedFields.altKategori = form.fields.altKategori;
-    }
+    try {
+      const parsedFields: Record<string, string | number | boolean> = {};
+      for (const field of categoryFields) {
+        const raw = form.fields[field.key];
+        if (raw === undefined || raw === "") continue;
+        parsedFields[field.key] = field.type === "number" ? Number(raw) : raw;
+      }
+      if (form.category === "vasita" && form.fields.altKategori) {
+        parsedFields.altKategori = form.fields.altKategori;
+      }
 
-    const sellerType: MembershipKind = user.membershipKind;
-    const status: ListingStatus = adminMode
-      ? form.status
-      : listing
-        ? listing.status
-        : "approved";
+      const sellerType: MembershipKind = user.membershipKind;
+      const intendedStatus: ListingStatus = adminMode
+        ? form.status
+        : listing
+          ? listing.status === "rejected"
+            ? "approved"
+            : listing.status
+          : "approved";
 
-    const payload = {
-      category: form.category,
-      title: form.title.trim(),
-      description: form.description.trim(),
-      price: form.price ? Number(form.price) : 0,
-      city: form.city,
-      district: form.district,
-      photos: listing?.photos ?? [`${form.category}-new`],
-      contactName: form.contactName.trim(),
-      contactPhone: form.contactPhone.trim(),
-      sellerType,
-      sellerKurumsalType: listing?.sellerKurumsalType ?? user.kurumsalType,
-      sellerId: listing?.sellerId ?? user.id,
-      status: adminMode ? status : listing ? listing.status : "approved",
-      featured: listing?.featured,
-      fields: parsedFields,
-    };
+      const identityDocs = await resolveIdentityDocs();
+      const photos = await resolveListingPhotos({
+        category: form.category,
+        files: photoFiles,
+        existing: existingPhotoSrcs,
+      });
 
-    if (listing) {
-      updateListing(listing.id, payload);
-      router.push(adminMode ? "/admin" : `/ilan/${listing.id}`);
-    } else {
-      const created = createListing(payload);
-      router.push(`/ilan/${created.id}`);
+      const ownerEmail =
+        listing && adminMode
+          ? loadUsers().find((u) => u.id === listing.sellerId)?.email ||
+            user.email
+          : user.email;
+
+      const moderation = await gateListingPublish({
+        photos,
+        fileNames: photoFiles.map((f) => f?.name),
+        intendedStatus,
+        recipientEmail: ownerEmail,
+        listingTitle: form.title.trim(),
+        listingId: listing?.id,
+        // Admin may set hidden/pending without re-scanning; approved always scans.
+        skipScan: adminMode && intendedStatus !== "approved",
+      });
+
+      const nextStatus = moderation.status;
+      const nowIso = new Date().toISOString();
+      const validUntil =
+        !listing
+          ? freeListingValidUntil(nowIso)
+          : nextStatus === "approved" && listing.status !== "approved"
+            ? freeListingValidUntil(nowIso)
+            : listing.validUntil || freeListingValidUntil(listing.createdAt);
+
+      const payload = {
+        category: form.category,
+        title: form.title.trim(),
+        description: form.description.trim(),
+        price: form.price ? Number(form.price) : 0,
+        city: form.city,
+        district: form.district,
+        photos,
+        contactName: form.contactName.trim(),
+        contactPhone: form.contactPhone.trim(),
+        sellerType,
+        sellerKurumsalType: listing?.sellerKurumsalType ?? user.kurumsalType,
+        sellerId: listing?.sellerId ?? user.id,
+        status: nextStatus,
+        featured: listing?.featured,
+        validUntil,
+        fields: parsedFields,
+        moderatedAt: nowIso,
+        rejectReason: moderation.rejectReason,
+        ...(identityDocs ? { identityDocs } : {}),
+      };
+
+      if (moderation.flagged && moderation.rejectReason) {
+        if (listing) {
+          updateListing(listing.id, payload);
+        } else {
+          createListing(payload);
+        }
+        setSuccess(false);
+        setError(rejectionUserMessage(moderation.rejectReason));
+        return;
+      }
+
+      if (listing) {
+        updateListing(listing.id, payload);
+        setSuccess(true);
+        window.setTimeout(() => {
+          router.push(adminMode ? "/admin" : listingPath(listing.id));
+        }, 2000);
+      } else {
+        const created = createListing(payload);
+        setSuccess(true);
+        window.setTimeout(() => {
+          router.push(listingPath(created.id));
+        }, 2000);
+      }
+    } catch (submitErr) {
+      setError(
+        submitErr instanceof Error ? submitErr.message : "İlan kaydedilemedi.",
+      );
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -234,6 +416,11 @@ export function ListingForm({
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+      {success && (
+        <p className="text-center text-base font-semibold text-green-600" role="status">
+          Başarıyla kaydedildi
+        </p>
+      )}
 
       <div className="space-y-4 rounded-xl border border-pink-500/20 bg-[color-mix(in_oklab,#fff7fa_90%,#fce7f0)] p-5">
         <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold text-[var(--ink)]">
@@ -243,23 +430,32 @@ export function ListingForm({
           <Label>Kategori</Label>
           <Select
             value={form.category}
-            onValueChange={(v) =>
+            onValueChange={(v) => {
+              const next = (v as CategorySlug) ?? form.category;
               setForm((f) => ({
                 ...f,
-                category: (v as CategorySlug) ?? f.category,
+                category: next,
                 fields: {},
-              }))
-            }
+              }));
+              if (next !== "bakici-arayanlar") {
+                setIdFrontFile(null);
+                setIdBackFile(null);
+                setPassportFile(null);
+              }
+              const nextSlots = photoSlotCountForCategory(next);
+              setPhotoFiles((prev) => resizePhotoFiles(prev, nextSlots));
+              setExistingPhotoSrcs((prev) => resizePhotoSrcs(prev, nextSlots));
+            }}
             disabled={!!listing && !adminMode}
-            items={Object.fromEntries(NAV_CATEGORIES.map((c) => [c.slug, c.name]))}
+            items={categorySelectItems}
           >
             <SelectTrigger className="mt-1.5 w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="z-[200]">
-              {NAV_CATEGORIES.map((c) => (
-                <SelectItem key={c.slug} value={c.slug}>
-                  {c.name}
+              {Object.entries(categorySelectItems).map(([slug, name]) => (
+                <SelectItem key={slug} value={slug}>
+                  {name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -303,9 +499,14 @@ export function ListingForm({
             <Select
               value={form.city}
               onValueChange={(city) => {
-                const c = city ?? form.city;
-                const first = CITIES[c]?.[0] ?? "";
-                setForm({ ...form, city: c, district: first });
+                setForm((f) => {
+                  const c = city ?? f.city;
+                  return {
+                    ...f,
+                    city: c,
+                    district: CITIES[c]?.[0] ?? "",
+                  };
+                });
               }}
               items={Object.fromEntries(CITY_NAMES.map((c) => [c, c]))}
             >
@@ -326,7 +527,10 @@ export function ListingForm({
             <Select
               value={form.district}
               onValueChange={(district) =>
-                setForm({ ...form, district: district ?? form.district })
+                setForm((f) => ({
+                  ...f,
+                  district: district ?? f.district,
+                }))
               }
               items={Object.fromEntries(districts.map((d) => [d, d]))}
             >
@@ -383,8 +587,10 @@ export function ListingForm({
               </Select>
             </div>
           )}
-          {supportsBrandModelSearch(form.category) && (
+          {supportsBrandModelSearch(form.category) &&
+            (form.category !== "vasita" || !!form.fields.altKategori) && (
             <BrandModelFields
+              key={`bm-${form.category}-${form.fields.altKategori || "all"}`}
               category={form.category}
               catalog={
                 form.category === "vasita" && form.fields.altKategori
@@ -393,7 +599,12 @@ export function ListingForm({
               }
               marka={form.fields.marka ?? ""}
               model={form.fields.model ?? ""}
-              onMarkaChange={(v) => setField("marka", v)}
+              onMarkaChange={(v) =>
+                setForm((f) => ({
+                  ...f,
+                  fields: { ...f.fields, marka: v, model: "" },
+                }))
+              }
               onModelChange={(v) => setField("model", v)}
               markaLabel={form.category === "yedek-parca" ? "Uyumlu Marka" : "Marka"}
               modelLabel={form.category === "yedek-parca" ? "Uyumlu Model" : "Model"}
@@ -422,8 +633,56 @@ export function ListingForm({
               </div>
             ))}
           </div>
+          {form.category === "vasita" && (
+            <AddressMap
+              compact
+              address={form.fields.adres ?? ""}
+              city={form.city}
+              district={form.district}
+            />
+          )}
+          {needsIdentityDocs && (
+            <IdentityDocsFields
+              idPrefix="listing-form"
+              idFront={idFrontFile}
+              idBack={idBackFile}
+              passport={passportFile}
+              existing={{
+                idFrontName: listing?.identityDocs?.idFront?.name,
+                idBackName: listing?.identityDocs?.idBack?.name,
+                passportName: listing?.identityDocs?.passport?.name,
+              }}
+              onIdFront={setIdFrontFile}
+              onIdBack={setIdBackFile}
+              onPassport={setPassportFile}
+            />
+          )}
         </div>
       )}
+
+      <div className="space-y-4 rounded-xl border border-pink-500/20 bg-[color-mix(in_oklab,#fff7fa_90%,#fce7f0)] p-5">
+        <PhotoUploadFields
+          idPrefix="listing-form-photo"
+          category={form.category}
+          slotCount={photoSlotCount}
+          files={photoFiles}
+          existingSrcs={existingPhotoSrcs}
+          onChange={(index, file) => {
+            setPhotoFiles((prev) => {
+              const next = resizePhotoFiles(prev, photoSlotCount);
+              next[index] = file;
+              return next;
+            });
+            if (file === null) {
+              setExistingPhotoSrcs((prev) => {
+                const next = resizePhotoSrcs(prev, photoSlotCount);
+                next[index] = undefined;
+                return next;
+              });
+            }
+          }}
+        />
+      </div>
 
       <div className="space-y-4 rounded-xl border border-pink-500/20 bg-[color-mix(in_oklab,#fff7fa_90%,#fce7f0)] p-5">
         <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold text-[var(--ink)]">
@@ -469,6 +728,7 @@ export function ListingForm({
                 pending: "Onay bekliyor",
                 approved: "Yayında",
                 hidden: "Gizli",
+                rejected: "Reddedildi",
               }}
             >
               <SelectTrigger className="mt-1.5 w-full">
@@ -478,24 +738,37 @@ export function ListingForm({
                 <SelectItem value="pending">Onay bekliyor</SelectItem>
                 <SelectItem value="approved">Yayında</SelectItem>
                 <SelectItem value="hidden">Gizli</SelectItem>
+                <SelectItem value="rejected">Reddedildi</SelectItem>
               </SelectContent>
             </Select>
           </div>
         )}
       </div>
 
+      <div className="rounded-xl border border-pink-500/20 bg-[color-mix(in_oklab,#fff7fa_90%,#fce7f0)] p-4 text-sm text-[var(--ink)]">
+        <p className="font-medium">{freeListingCopy.badge}</p>
+        <p className="mt-1 text-xs text-stone-600">{freeListingCopy.detail}</p>
+        {listing?.validUntil && (
+          <p className="mt-1 text-xs text-stone-500">
+            Geçerli süre: {formatDateShort(listing.validUntil)} tarihine kadar
+          </p>
+        )}
+      </div>
+
       <div className="flex flex-wrap gap-3">
-        <Button type="submit" disabled={saving} className="bg-[var(--lagoon)] hover:bg-[#be185d]">
-          {listing ? "Kaydet" : "İlanı yayınla"}
+        <Button
+          type="submit"
+          disabled={saving || success}
+          className="bg-[var(--lagoon)] hover:bg-[#be185d]"
+        >
+          Kaydet
         </Button>
         <Button type="button" variant="outline" onClick={() => router.back()}>
           Vazgeç
         </Button>
       </div>
-      {!listing && user?.role !== "admin" && (
-        <p className="text-xs text-stone-500">
-          Yeni ilanlar otomatik olarak onaylanır ve hemen yayına alınır.
-        </p>
+      {!listing && (
+        <p className="text-xs text-stone-500">{freeListingCopy.publishHint}</p>
       )}
     </form>
   );

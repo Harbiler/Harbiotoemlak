@@ -1,10 +1,13 @@
 import { Suspense } from "react";
 import { ListingDetailClient } from "./listing-detail-client";
 import { ListingsLoading } from "@/components/listings/listing-states";
-import { SEED_LISTINGS } from "@/lib/seed";
 
+/**
+ * Static export requires ≥1 param. Real listings use /ilan/detay/?id=…
+ * Placeholder is never linked; client shows not-found for unknown ids.
+ */
 export function generateStaticParams() {
-  return SEED_LISTINGS.map((listing) => ({ id: listing.id }));
+  return [{ id: "_" }];
 }
 
 export default async function ListingDetailPage({

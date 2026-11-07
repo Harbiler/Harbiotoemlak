@@ -2,94 +2,33 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { addCaregiverApplication } from "@/lib/storage";
-import type { ApplicationFile } from "@/lib/types";
+import { IdentityDocsFields } from "@/components/listings/identity-docs-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  MAX_UPLOAD_SIZE_LABEL,
+  PHOTO_ACCEPTED,
+  hasRequiredIdentityDocs,
+  IDENTITY_DOCS_ERROR,
+  readFileAsAppFile,
+} from "@/lib/application-file";
+import { addCaregiverApplication } from "@/lib/storage";
 import { ArrowLeft, HeartHandshake, Upload } from "lucide-react";
-
-const MAX_FILE_BYTES = 2.5 * 1024 * 1024;
-const DOC_ACCEPTED = "image/jpeg,image/png,image/webp,application/pdf";
-const PHOTO_ACCEPTED = "image/jpeg,image/png,image/webp";
-
-async function readFileAsAppFile(
-  file: File,
-  opts?: { imagesOnly?: boolean },
-): Promise<ApplicationFile> {
-  if (file.size > MAX_FILE_BYTES) {
-    throw new Error(`"${file.name}" 2.5 MB sınırını aşıyor.`);
-  }
-  const allowed = (opts?.imagesOnly ? PHOTO_ACCEPTED : DOC_ACCEPTED).split(",");
-  if (!allowed.includes(file.type)) {
-    throw new Error(
-      opts?.imagesOnly
-        ? `"${file.name}" için JPEG, PNG veya WEBP yükleyin.`
-        : `"${file.name}" için JPEG, PNG, WEBP veya PDF yükleyin.`,
-    );
-  }
-  const dataUrl = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("Dosya okunamadı."));
-    reader.readAsDataURL(file);
-  });
-  return {
-    name: file.name,
-    type: file.type,
-    size: file.size,
-    dataUrl,
-  };
-}
-
-function FileUploadField({
-  id,
-  label,
-  hint,
-  file,
-  accept,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  hint: string;
-  file: File | null;
-  accept: string;
-  onChange: (file: File | null) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
-      <label
-        htmlFor={id}
-        className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border border-dashed border-[color-mix(in_oklab,var(--lagoon)_28%,transparent)] bg-white/70 px-4 py-6 text-center transition hover:bg-[var(--mist)]"
-      >
-        <Upload className="size-5 text-[var(--lagoon)]" />
-        <span className="text-sm font-medium text-[var(--ink)]">
-          {file ? file.name : `${label} yükle`}
-        </span>
-        <span className="text-xs text-[var(--muted-foreground)]">{hint}</span>
-        <Input
-          id={id}
-          type="file"
-          accept={accept}
-          className="sr-only"
-          onChange={(e) => onChange(e.target.files?.[0] ?? null)}
-          required
-        />
-      </label>
-    </div>
-  );
-}
 
 export default function CaregiverApplyPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [residenceFile, setResidenceFile] = useState<File | null>(null);
-  const [criminalFile, setCriminalFile] = useState<File | null>(null);
+  const [vatandaslik, setVatandaslik] = useState("");
+  const [city, setCity] = useState("");
+  const [address, setAddress] = useState("");
   const [profileFile, setProfileFile] = useState<File | null>(null);
+  const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
+  const [idBackFile, setIdBackFile] = useState<File | null>(null);
+  const [passportFile, setPassportFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
@@ -102,26 +41,52 @@ export default function CaregiverApplyPage() {
       setError("İsim soyisim, e-posta ve telefon zorunludur.");
       return;
     }
-    if (!residenceFile || !criminalFile || !profileFile) {
-      setError("İkametgâh, sabıka kaydı ve profil resmi yüklenmelidir.");
+    if (!vatandaslik.trim()) {
+      setError("Vatandaşlık / ülke zorunludur.");
+      return;
+    }
+    if (!city.trim()) {
+      setError("Yaşadığınız şehir zorunludur.");
+      return;
+    }
+    if (!address.trim()) {
+      setError("Adres bilgisi zorunludur.");
+      return;
+    }
+    if (!profileFile) {
+      setError("Profil resmi yüklenmelidir.");
+      return;
+    }
+    if (
+      !hasRequiredIdentityDocs({
+        idFront: idFrontFile,
+        idBack: idBackFile,
+        passport: passportFile,
+      })
+    ) {
+      setError(IDENTITY_DOCS_ERROR);
       return;
     }
 
     setSaving(true);
     try {
-      const [residenceDocument, criminalRecordDocument, profilePhoto] =
-        await Promise.all([
-          readFileAsAppFile(residenceFile),
-          readFileAsAppFile(criminalFile),
-          readFileAsAppFile(profileFile, { imagesOnly: true }),
-        ]);
+      const [profilePhoto, idFront, idBack, passport] = await Promise.all([
+        readFileAsAppFile(profileFile, { imagesOnly: true }),
+        idFrontFile ? readFileAsAppFile(idFrontFile) : Promise.resolve(undefined),
+        idBackFile ? readFileAsAppFile(idBackFile) : Promise.resolve(undefined),
+        passportFile ? readFileAsAppFile(passportFile) : Promise.resolve(undefined),
+      ]);
       addCaregiverApplication({
         fullName: fullName.trim(),
         email: email.trim(),
         phone: phone.trim(),
-        residenceDocument,
-        criminalRecordDocument,
+        vatandaslik: vatandaslik.trim(),
+        city: city.trim(),
+        address: address.trim(),
         profilePhoto,
+        ...(idFront ? { idFront } : {}),
+        ...(idBack ? { idBack } : {}),
+        ...(passport ? { passport } : {}),
       });
       setDone(true);
     } catch (err) {
@@ -176,8 +141,9 @@ export default function CaregiverApplyPage() {
           Bakıcı Olmak İstiyorum
         </h1>
         <p className="mt-2 text-[var(--muted-foreground)]">
-          İkametgâh, sabıka kaydı ve profil fotoğrafınızla başvurun. Başvurular
-          otomatik onaylanır.
+          Vatandaşlık, kimlik veya pasaport, yaşadığınız şehir, adres
+          bilgisi ve profil fotoğrafınızla başvurun. Başvurular otomatik
+          onaylanır.
         </p>
       </div>
 
@@ -226,22 +192,51 @@ export default function CaregiverApplyPage() {
           />
         </div>
 
-        <FileUploadField
-          id="residenceDocument"
-          label="İkametgah"
-          hint="JPEG, PNG, WEBP veya PDF · en fazla 2.5 MB"
-          file={residenceFile}
-          accept={DOC_ACCEPTED}
-          onChange={setResidenceFile}
-        />
+        <div className="space-y-2">
+          <Label htmlFor="vatandaslik">Vatandaşlık / Ülke</Label>
+          <Input
+            id="vatandaslik"
+            value={vatandaslik}
+            onChange={(e) => setVatandaslik(e.target.value)}
+            placeholder="Türkmenistanlı"
+            required
+            className="h-10 bg-white"
+          />
+        </div>
 
-        <FileUploadField
-          id="criminalRecord"
-          label="Sabıka kaydı"
-          hint="JPEG, PNG, WEBP veya PDF · en fazla 2.5 MB"
-          file={criminalFile}
-          accept={DOC_ACCEPTED}
-          onChange={setCriminalFile}
+        <div className="space-y-2">
+          <Label htmlFor="city">Şehir</Label>
+          <Input
+            id="city"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder="Örn. İstanbul"
+            required
+            className="h-10 bg-white"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="address">Adres Bilgisi</Label>
+          <Textarea
+            id="address"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            placeholder="Açık adres (ilçe, mahalle, sokak, no)"
+            required
+            rows={3}
+            className="bg-white"
+          />
+        </div>
+
+        <IdentityDocsFields
+          idPrefix="bakici"
+          idFront={idFrontFile}
+          idBack={idBackFile}
+          passport={passportFile}
+          onIdFront={setIdFrontFile}
+          onIdBack={setIdBackFile}
+          onPassport={setPassportFile}
         />
 
         <div className="space-y-2">
@@ -258,7 +253,8 @@ export default function CaregiverApplyPage() {
               {profileFile ? profileFile.name : "Profil resmi yükle"}
             </span>
             <span className="text-xs text-[var(--muted-foreground)]">
-              JPEG, PNG veya WEBP · en fazla 2.5 MB · güneş gözlüğü yok
+              JPEG, PNG veya WEBP · en fazla {MAX_UPLOAD_SIZE_LABEL} · güneş
+              gözlüğü yok
             </span>
             <Input
               id="profilePhoto"

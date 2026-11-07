@@ -1,7 +1,9 @@
 export type MembershipKind = "bireysel" | "kurumsal";
 export type KurumsalType = "galeri" | "emlak";
 export type UserRole = "user" | "admin";
-export type ListingStatus = "pending" | "approved" | "hidden";
+export type ListingStatus = "pending" | "approved" | "hidden" | "rejected";
+/** Admin ödemeler: ücretsiz dönem, ücret ödendi, veya vadesi geldi. */
+export type ListingPaymentStatus = "free" | "paid" | "due";
 export type SellerBadge = "bireysel" | "galeri" | "emlak";
 
 export type CategorySlug =
@@ -15,6 +17,7 @@ export type CategorySlug =
   | "evcil-hayvan-otelleri"
   | "yardimci-arayanlar"
   | "bakici-arayanlar"
+  | "toptancilar"
   | "ozel-ders"
   | "is-ilanlari";
 
@@ -24,11 +27,22 @@ export interface User {
   password: string;
   name: string;
   phone: string;
+  /** T.C. Kimlik No — 11 hane (yeni kayıtlarda zorunlu) */
+  tcKimlikNo?: string;
+  /** Açık adres (yeni kayıtlarda zorunlu) */
+  address?: string;
   role: UserRole;
   membershipKind: MembershipKind;
   kurumsalType?: KurumsalType;
   companyName?: string;
+  /** Admin kısıtlama / ban — true ise giriş engellenir */
+  restricted?: boolean;
   createdAt: string;
+}
+
+/** T.C. Kimlik No: yalnızca 11 rakam. */
+export function isValidTcKimlikNo(value: string): boolean {
+  return /^\d{11}$/.test(value.trim());
 }
 
 export interface Listing {
@@ -51,7 +65,25 @@ export interface Listing {
   featured?: boolean;
   createdAt: string;
   updatedAt: string;
+  /** Yayın geçerlilik bitişi (ISO). Yeni ilanlar yayın tarihinden itibaren 1 yıl ücretsiz. */
+  validUntil: string;
+  /**
+   * Ödeme durumu (admin Ödemeler). Yoksa açılış kuralı: `validUntil` dolana kadar ücretsiz.
+   * `due` = ücretsiz süre bitti / ödeme bekliyor; `paid` = ücretli işaretlendi.
+   */
+  paymentStatus?: ListingPaymentStatus;
+  /** Admin “Ücretli” işaretlediğinde (ISO). */
+  paidAt?: string;
   fields: Record<string, string | number | boolean>;
+  /**
+   * Kimlik ön/arka veya pasaport — bytes in device IndexedDB (`idb:hb/…` refs).
+   * Bakıcı Arayanlar ilanlarında zorunlu; genel ilan özelliklerinde gösterilmez.
+   */
+  identityDocs?: ListingIdentityDocs;
+  /** Otomatik içerik denetimi red gerekçesi (müstehcenlik / çıplaklık vb.). */
+  rejectReason?: string;
+  /** Son otomatik görsel denetimi zamanı (ISO). */
+  moderatedAt?: string;
 }
 
 export interface AuthSession {
@@ -65,11 +97,22 @@ export interface PetHotelApplicationFile {
   name: string;
   type: string;
   size: number;
+  /**
+   * Device-local media ref (`idb:hb/…`) or legacy data URL.
+   * Bytes live in IndexedDB on the signed-in user’s browser/device — not a server.
+   */
   dataUrl: string;
 }
 
 /** Shared uploaded file payload for partner applications. */
 export type ApplicationFile = PetHotelApplicationFile;
+
+/** Kimlik / pasaport yüklemeleri — public özellik listesinde yer almaz. */
+export interface ListingIdentityDocs {
+  idFront?: ApplicationFile;
+  idBack?: ApplicationFile;
+  passport?: ApplicationFile;
+}
 
 export interface PetHotelApplication {
   id: string;
@@ -89,9 +132,23 @@ export interface CaregiverApplication {
   fullName: string;
   email: string;
   phone: string;
-  residenceDocument: ApplicationFile;
-  criminalRecordDocument: ApplicationFile;
+  /** Örn. Türkmenistanlı, Türkiyeli */
+  vatandaslik: string;
+  /** Yaşadığı şehir (metin) — ikametgâh belgesi yok; yeni başvurularda zorunlu */
+  city?: string;
+  /** Açık adres bilgisi (metin) — yeni başvurularda zorunlu */
+  address?: string;
   profilePhoto: ApplicationFile;
+  /** Kimlik ön — pasaport yoksa ön+arka zorunlu */
+  idFront?: ApplicationFile;
+  /** Kimlik arka — pasaport yoksa ön+arka zorunlu */
+  idBack?: ApplicationFile;
+  /** Pasaport — kimlik ön+arka yerine yeterli */
+  passport?: ApplicationFile;
+  /** Eski başvurularda kalabilir; yeni formda yok */
+  residenceDocument?: ApplicationFile;
+  /** Eski başvurularda kalabilir; yeni formda yok */
+  criminalRecordDocument?: ApplicationFile;
   status: CaregiverApplicationStatus;
   createdAt: string;
 }

@@ -11,6 +11,7 @@ import {
   Hotel,
   PawPrint,
   Bike,
+  Warehouse,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -28,6 +29,7 @@ const ICONS: Record<CategorySlug, LucideIcon> = {
   "evcil-hayvan-otelleri": Hotel,
   "yardimci-arayanlar": HeartHandshake,
   "bakici-arayanlar": Baby,
+  toptancilar: Warehouse,
   "ozel-ders": BookOpen,
   "is-ilanlari": Briefcase,
 };

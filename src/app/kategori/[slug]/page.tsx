@@ -1,11 +1,16 @@
+import { Suspense } from "react";
 import { CATEGORIES } from "@/lib/categories";
 import { CategoryPageClient } from "./category-page-client";
+import { ListingsLoading } from "@/components/listings/listing-states";
 
 export function generateStaticParams() {
-  // `/kategori/vasita` is a dedicated route with its own subpages.
-  return CATEGORIES.filter((category) => category.slug !== "vasita").map(
-    (category) => ({ slug: category.slug }),
-  );
+  // Dedicated hubs with their own subpages.
+  return CATEGORIES.filter(
+    (category) =>
+      category.slug !== "vasita" &&
+      category.slug !== "toptancilar" &&
+      category.slug !== "emlak",
+  ).map((category) => ({ slug: category.slug }));
 }
 
 export default async function CategoryPage({
@@ -14,5 +19,9 @@ export default async function CategoryPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  return <CategoryPageClient slug={slug} />;
+  return (
+    <Suspense fallback={<ListingsLoading />}>
+      <CategoryPageClient slug={slug} />
+    </Suspense>
+  );
 }

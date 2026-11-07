@@ -1,5 +1,9 @@
+"use client";
+
 import { CategoryIcon } from "@/components/category-icon";
+import { useMediaSrc } from "@/hooks/use-media-src";
 import { getCategory } from "@/lib/categories";
+import { isRenderablePhoto } from "@/lib/listing-photos";
 import type { CategorySlug } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +18,7 @@ const GRADIENTS: Record<string, string> = {
   "evcil-hayvan-otelleri": "from-pink-800 via-rose-700 to-fuchsia-800",
   "yardimci-arayanlar": "from-rose-800 via-pink-700 to-stone-700",
   "bakici-arayanlar": "from-fuchsia-800 via-pink-700 to-rose-800",
+  toptancilar: "from-fuchsia-900 via-pink-800 to-rose-900",
   "ozel-ders": "from-pink-900 via-fuchsia-800 to-rose-900",
   "is-ilanlari": "from-rose-900 via-pink-800 to-fuchsia-900",
 };
@@ -23,13 +28,36 @@ export function PhotoPlaceholder({
   title,
   className,
   large,
+  src,
 }: {
   category: CategorySlug;
   title?: string;
   className?: string;
   large?: boolean;
+  /** Data URL, path, or device IndexedDB media ref (`idb:hb/…`). */
+  src?: string;
 }) {
   const cat = getCategory(category);
+  const label = title ? `${title} görseli` : "İlan görseli";
+  const resolved = useMediaSrc(isRenderablePhoto(src) ? src : undefined);
+
+  if (isRenderablePhoto(src)) {
+    return (
+      <div
+        className={cn("relative overflow-hidden bg-[var(--mist)]", className)}
+        role="img"
+        aria-label={label}
+      >
+        {resolved ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={resolved} alt={label} className="size-full object-cover" />
+        ) : (
+          <div className="size-full animate-pulse bg-[var(--mist)]" />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -38,7 +66,7 @@ export function PhotoPlaceholder({
         className,
       )}
       role="img"
-      aria-label={title ? `${title} görseli` : "İlan görseli"}
+      aria-label={label}
     >
       <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_20%_20%,white_0,transparent_40%),radial-gradient(circle_at_80%_60%,white_0,transparent_35%)]" />
       <div className="relative flex flex-col items-center gap-2 p-4 text-center">

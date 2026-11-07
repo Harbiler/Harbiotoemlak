@@ -1,4 +1,5 @@
 import type { CategorySlug } from "./types";
+import { WHOLESALE_TRADES } from "./wholesale-trades";
 
 export interface CategoryField {
   key: string;
@@ -185,7 +186,14 @@ export const CATEGORIES: CategoryDef[] = [
         key: "yakit",
         label: "Yakıt",
         type: "select",
-        options: ["Benzin", "Dizel", "LPG", "Hibrit", "Elektrik"],
+        options: [
+          "Benzin",
+          "Dizel",
+          "LPG",
+          "Benzin & LPG",
+          "Hibrit",
+          "Elektrik",
+        ],
         required: true,
       },
       {
@@ -201,7 +209,38 @@ export const CATEGORIES: CategoryDef[] = [
         type: "select",
         options: ["Sedan", "Hatchback", "SUV", "Station", "Coupe", "Pickup"],
       },
-      { key: "renk", label: "Renk", type: "text" },
+      {
+        key: "renk",
+        label: "Renk",
+        type: "select",
+        options: [
+          "Beyaz",
+          "Siyah",
+          "Gri",
+          "Gümüş",
+          "Kırmızı",
+          "Mavi",
+          "Lacivert",
+          "Yeşil",
+          "Sarı",
+          "Turuncu",
+          "Kahverengi",
+          "Bej",
+          "Bordo",
+          "Mor",
+          "Pembe",
+          "Altın",
+          "Diğer",
+        ],
+        required: true,
+      },
+      {
+        key: "adres",
+        label: "Adres",
+        type: "textarea",
+        placeholder: "Açık adres (mahalle, sokak, no)",
+        required: true,
+      },
     ],
   },
   {
@@ -435,12 +474,68 @@ export const CATEGORIES: CategoryDef[] = [
         options: ["Yatılı", "Gündüzlü", "Saatlik", "Hafta Sonu"],
         required: true,
       },
+      {
+        key: "vatandaslik",
+        label: "Vatandaşlık / Ülke",
+        type: "text",
+        placeholder: "Türkmenistanlı",
+        required: true,
+      },
+      {
+        key: "adres",
+        label: "Adres Bilgisi",
+        type: "textarea",
+        placeholder: "Açık adres (ilçe, mahalle, sokak, no)",
+        required: true,
+      },
       { key: "yasAraligi", label: "Yaş Aralığı (bakılan)", type: "text" },
       {
         key: "sertifika",
         label: "Sertifika / Referans",
         type: "select",
         options: ["Gerekli", "Tercihen", "Gerekmez"],
+      },
+    ],
+  },
+  {
+    slug: "toptancilar",
+    name: "Toptancılar",
+    shortName: "Toptancılar",
+    description: "Giyim, ayakkabı, kumaş ve diğer toptan meslek ilanları",
+    icon: "warehouse",
+    accent: "#C026D3",
+    fields: [
+      {
+        key: "toptanMeslek",
+        label: "Toptan Mesleği",
+        type: "select",
+        options: [...WHOLESALE_TRADES],
+        required: true,
+      },
+      {
+        key: "firmaAdi",
+        label: "Firma / Depo Adı",
+        type: "text",
+        placeholder: "örn. Moda Toptan Merkezi",
+        required: true,
+      },
+      {
+        key: "minSiparis",
+        label: "Minimum Sipariş",
+        type: "text",
+        placeholder: "örn. 1 koli / 10 adet",
+      },
+      {
+        key: "teslimat",
+        label: "Teslimat",
+        type: "select",
+        options: ["Depodan teslim", "Şehir içi kargo", "Türkiye geneli kargo", "Anlaşmalı"],
+      },
+      {
+        key: "urunCesidi",
+        label: "Ürün Çeşidi",
+        type: "text",
+        placeholder: "örn. kadın üst giyim, denim",
       },
     ],
   },
@@ -516,15 +611,16 @@ export const HIDDEN_NAV_CATEGORY_SLUGS = new Set([
 ]);
 
 /**
- * Homepage / nav order (4-col desktop).
- * Evcil Hayvan Otelleri swapped with İş Makineleri.
+ * Homepage / nav order (6-col desktop).
+ * Evcil + Bakıcı left of Yedek Parça; Toptancılar immediately right of Bakıcı.
  */
 export const NAV_CATEGORY_ORDER: CategorySlug[] = [
   "emlak",
   "vasita",
-  "yedek-parca",
   "evcil-hayvan-otelleri",
   "bakici-arayanlar",
+  "toptancilar",
+  "yedek-parca",
   "is-makineleri",
   "ustalar",
   "yardimci-arayanlar",

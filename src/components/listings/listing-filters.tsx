@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { getCategory } from "@/lib/categories";
 import {
   supportsBrandModelSearch,
@@ -18,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Button } from "@/components/ui/button";
 import { EmlakFilters } from "@/components/listings/emlak-filters";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 const VASITA_CAR_EXTRA_SUBS = new Set([
   "otomobil",
@@ -103,6 +105,10 @@ export function ListingFilters({
   onReset,
   categorySlug,
   vasitaSub,
+  collapsible = false,
+  defaultOpen = true,
+  open: openProp,
+  onOpenChange,
 }: {
   value: FilterState;
   onChange: (next: FilterState) => void;
@@ -110,7 +116,27 @@ export function ListingFilters({
   categorySlug?: string;
   /** When browsing /kategori/vasita/[sub], scopes Marka→Model to that alt kategori. */
   vasitaSub?: string;
+  /** When true, Detaylı arama is an expandable/collapsible panel. */
+  collapsible?: boolean;
+  /** Initial open state when uncontrolled (collapsible only). */
+  defaultOpen?: boolean;
+  /** Controlled open state for the Detaylı arama panel. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
+  const isControlled = openProp !== undefined;
+  const panelOpen = isControlled ? openProp : uncontrolledOpen;
+
+  useEffect(() => {
+    if (!isControlled) setUncontrolledOpen(defaultOpen);
+  }, [defaultOpen, isControlled]);
+
+  function setPanelOpen(next: boolean) {
+    if (!isControlled) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  }
+
   const sellerType = isHepsi(value.sellerType) ? HEPSI : value.sellerType;
   const category = categorySlug ? getCategory(categorySlug) : undefined;
   const vasitaSubDef = vasitaSub ? getVasitaSubcategory(vasitaSub) : undefined;
@@ -135,42 +161,80 @@ export function ListingFilters({
     !!vasitaSubDef;
 
   const extraSelectFields =
-    category && showDetailed && categorySlug === "yedek-parca"
-      ? category.fields.filter(
-          (f) => f.type === "select" && f.key !== "marka" && f.key !== "model",
-        )
-      : category && showBrandModel && showCarExtras
+    category && categorySlug === "toptancilar"
+      ? category.fields.filter((f) => f.type === "select")
+      : category && showDetailed && categorySlug === "yedek-parca"
         ? category.fields.filter(
             (f) => f.type === "select" && f.key !== "marka" && f.key !== "model",
           )
-        : category && showBrandModel && categorySlug === "motorsiklet"
+        : category && showBrandModel && showCarExtras
           ? category.fields.filter(
               (f) =>
                 f.type === "select" && f.key !== "marka" && f.key !== "model",
             )
-          : [];
+          : category && showBrandModel && categorySlug === "motorsiklet"
+            ? category.fields.filter(
+                (f) =>
+                  f.type === "select" &&
+                  f.key !== "marka" &&
+                  f.key !== "model",
+              )
+            : [];
 
   if (isEmlak) {
+    if (collapsible) {
+      return (
+        <div className="hb-surface overflow-hidden" data-hb-detailed-search>
+          <button
+            type="button"
+            aria-expanded={panelOpen}
+            onClick={() => setPanelOpen(!panelOpen)}
+            className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[color-mix(in_oklab,var(--lagoon)_6%,transparent)]"
+            data-hb-detailed-search-toggle
+          >
+            <span>
+              <span className="block text-sm font-semibold text-[var(--lagoon)]">
+                Detaylı arama
+              </span>
+              <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">
+                {panelOpen
+                  ? "İlan tipi, konut, oda, fiyat ve konuma göre daraltın."
+                  : "İlan tipi, konut, oda, fiyat ve konuma göre daraltın."}
+              </span>
+            </span>
+            {panelOpen ? (
+              <ChevronUp className="size-5 shrink-0 text-[var(--lagoon)]" />
+            ) : (
+              <ChevronDown className="size-5 shrink-0 text-[var(--lagoon)]" />
+            )}
+          </button>
+          {panelOpen ? (
+            <div
+              className="border-t border-[color-mix(in_oklab,var(--ink)_8%,transparent)] p-4"
+              data-hb-detailed-search-panel
+            >
+              <EmlakFilters
+                value={value}
+                onChange={onChange}
+                onReset={onReset}
+                embedded
+              />
+            </div>
+          ) : null}
+        </div>
+      );
+    }
     return <EmlakFilters value={value} onChange={onChange} onReset={onReset} />;
   }
 
-  return (
-    <div className="hb-surface space-y-4 p-4">
-      {showDetailed && (
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--lagoon)]">
-            Detaylı arama
-          </p>
-          <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-            {showBrandModel
-              ? vasitaSubDef
-                ? `${vasitaSubDef.name} için marka ve modellere göre daraltın.`
-                : "Tüm marka ve modellere göre daraltın."
-              : "Özelliklere göre daraltın."}
-          </p>
-        </div>
-      )}
+  const hint = showBrandModel
+    ? vasitaSubDef
+      ? `${vasitaSubDef.name} için marka ve modellere göre daraltın.`
+      : "Tüm marka ve modellere göre daraltın."
+    : "Özelliklere göre daraltın.";
 
+  const body = (
+    <div className="space-y-4">
       <div>
         <Label htmlFor="q">Ara</Label>
         <Input
@@ -339,6 +403,59 @@ export function ListingFilters({
       >
         Filtreleri temizle
       </Button>
+    </div>
+  );
+
+  if (collapsible) {
+    const closedHint = showDetailed
+      ? "Marka, model, yıl, fiyat ve konuma göre daraltın."
+      : "Konum, fiyat ve satıcı tipine göre daraltın.";
+    return (
+      <div className="hb-surface overflow-hidden" data-hb-detailed-search>
+        <button
+          type="button"
+          aria-expanded={panelOpen}
+          onClick={() => setPanelOpen(!panelOpen)}
+          className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[color-mix(in_oklab,var(--lagoon)_6%,transparent)]"
+          data-hb-detailed-search-toggle
+        >
+          <span>
+            <span className="block text-sm font-semibold text-[var(--lagoon)]">
+              Detaylı arama
+            </span>
+            <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">
+              {panelOpen ? (showDetailed ? hint : closedHint) : closedHint}
+            </span>
+          </span>
+          {panelOpen ? (
+            <ChevronUp className="size-5 shrink-0 text-[var(--lagoon)]" />
+          ) : (
+            <ChevronDown className="size-5 shrink-0 text-[var(--lagoon)]" />
+          )}
+        </button>
+        {panelOpen ? (
+          <div
+            className="border-t border-[color-mix(in_oklab,var(--ink)_8%,transparent)] p-4"
+            data-hb-detailed-search-panel
+          >
+            {body}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="hb-surface space-y-4 p-4">
+      {showDetailed && (
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--lagoon)]">
+            Detaylı arama
+          </p>
+          <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">{hint}</p>
+        </div>
+      )}
+      {body}
     </div>
   );
 }

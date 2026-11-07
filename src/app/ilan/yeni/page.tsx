@@ -9,10 +9,12 @@ import { NAV_CATEGORIES, getCategory } from "@/lib/categories";
 import { CITY_NAMES, CITIES } from "@/lib/cities";
 import type { CategorySlug, ListingStatus } from "@/lib/types";
 import { formatPrice } from "@/lib/format";
+import { freeListingCopy, freeListingValidUntil } from "@/lib/listing-validity";
 import { CategoryIcon } from "@/components/category-icon";
 import { SellerBadge } from "@/components/listings/seller-badge";
 import { ListingsLoading } from "@/components/listings/listing-states";
 import { PhotoPlaceholder } from "@/components/listings/photo-placeholder";
+import { PhotoUploadFields } from "@/components/listings/photo-upload-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,13 +28,34 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { AddressMap } from "@/components/listings/address-map";
 import { BrandModelFields } from "@/components/listings/brand-model-fields";
+import { IdentityDocsFields } from "@/components/listings/identity-docs-fields";
 import { supportsBrandModelSearch } from "@/lib/brand-models";
 import {
   getVasitaSubcategory,
   VASITA_SUBCATEGORIES,
 } from "@/lib/vasita-subcategories";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import {
+  hasRequiredIdentityDocs,
+  IDENTITY_DOCS_ERROR,
+  readFileAsAppFile,
+} from "@/lib/application-file";
+import {
+  emptyPhotoSlots,
+  isRenderablePhoto,
+  LISTING_PHOTO_SLOT_COUNT,
+  photoSlotCountForCategory,
+  resolveListingPhotos,
+  resizePhotoFiles,
+} from "@/lib/listing-photos";
+import type { ListingIdentityDocs } from "@/lib/types";
+import { listingPath } from "@/lib/listing-path";
+import {
+  gateListingPublish,
+  rejectionUserMessage,
+} from "@/lib/listing-publish-moderation";
+import { ArrowLeft, ArrowRight, Check, X } from "lucide-react";
 
 type Step = "kategori" | "form" | "onizleme" | "yayin";
 
@@ -62,12 +85,28 @@ function NewListingWizard() {
   const searchParams = useSearchParams();
   const preset = searchParams.get("kategori");
   const presetAlt = searchParams.get("alt");
+  const presetMeslek = searchParams.get("meslek");
 
   const [step, setStep] = useState<Step>("kategori");
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [rejectNotice, setRejectNotice] = useState<string | null>(null);
+  const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
+  const [idBackFile, setIdBackFile] = useState<File | null>(null);
+  const [passportFile, setPassportFile] = useState<File | null>(null);
+  const initialCategory =
+    preset && getCategory(preset) ? (preset as CategorySlug) : "";
+  const [photoFiles, setPhotoFiles] = useState<(File | null)[]>(() =>
+    emptyPhotoSlots(initialCategory || LISTING_PHOTO_SLOT_COUNT),
+  );
+  const [photoObjectUrls, setPhotoObjectUrls] = useState<(string | undefined)[]>(
+    () =>
+      emptyPhotoSlots(initialCategory || LISTING_PHOTO_SLOT_COUNT).map(
+        () => undefined,
+      ),
+  );
   const [draft, setDraft] = useState<Draft>(() => ({
-    category:
-      preset && getCategory(preset) ? (preset as CategorySlug) : "",
+    category: initialCategory,
     title: "",
     description: "",
     price: "",
@@ -79,6 +118,9 @@ function NewListingWizard() {
       if (preset === "vasita" && presetAlt && getVasitaSubcategory(presetAlt)) {
         return { altKategori: presetAlt };
       }
+      if (preset === "toptancilar" && presetMeslek) {
+        return { toptanMeslek: presetMeslek };
+      }
       return {};
     })(),
   }));
@@ -88,6 +130,29 @@ function NewListingWizard() {
       router.replace(`/giris?next=${encodeURIComponent("/ilan/yeni")}`);
     }
   }, [ready, user, router]);
+
+  useEffect(() => {
+    const urls = photoFiles.map((file) =>
+      file ? URL.createObjectURL(file) : undefined,
+    );
+    setPhotoObjectUrls(urls);
+    return () => {
+      urls.forEach((u) => {
+        if (u) URL.revokeObjectURL(u);
+      });
+    };
+  }, [photoFiles]);
+
+  // URL ?kategori= / &alt= (e.g. Motorsiklet) → jump to form; Vasıta may still need alt.
+  // Never clobber an advanced step (onizleme / yayin) if this effect re-fires
+  // after a remount / Strict Mode / Suspense replay — that aborted preview nav.
+  useEffect(() => {
+    if (draft.category && getCategory(draft.category)) {
+      setStep((s) => (s === "kategori" ? "form" : s));
+    }
+    // Only on mount / preset — do not re-run when user goes back to kategori.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -102,6 +167,16 @@ function NewListingWizard() {
   const category = draft.category ? getCategory(draft.category) : undefined;
   const districts = CITIES[draft.city] ?? [];
   const stepIndex = STEPS.findIndex((s) => s.id === step);
+  const photoSlotCount = photoSlotCountForCategory(draft.category);
+
+  useEffect(() => {
+    setPhotoFiles((prev) => resizePhotoFiles(prev, photoSlotCount));
+  }, [photoSlotCount]);
+
+  /** Functional field write — avoids stale closures wiping marka/model mid-form. */
+  function setDraftField(key: string, value: string) {
+    setDraft((d) => ({ ...d, fields: { ...d.fields, [key]: value } }));
+  }
 
   const previewListing = useMemo(() => {
     if (!draft.category || !user) return null;
@@ -124,20 +199,52 @@ function NewListingWizard() {
     if (!draft.category) return "Kategori seçin.";
     if (!draft.title.trim()) return "Başlık zorunludur.";
     if (draft.description.trim().length < 20) return "Açıklama en az 20 karakter olmalıdır.";
+    if (!draft.city || !draft.district) return "İl ve ilçe seçin.";
     if (!draft.contactName.trim() || !draft.contactPhone.trim()) {
       return "İletişim bilgileri zorunludur.";
     }
     if (draft.category === "vasita" && !draft.fields.altKategori) {
       return "Vasıta alt kategorisi seçin.";
     }
+    if (
+      supportsBrandModelSearch(draft.category) &&
+      (draft.category !== "vasita" || draft.fields.altKategori) &&
+      (!draft.fields.marka?.trim() || !draft.fields.model?.trim())
+    ) {
+      return "Marka ve model zorunludur.";
+    }
     const fields = category?.fields ?? [];
     for (const f of fields) {
       if (f.required && !draft.fields[f.key]?.trim()) return `${f.label} zorunludur.`;
     }
+    if (draft.category === "bakici-arayanlar") {
+      if (
+        !hasRequiredIdentityDocs({
+          idFront: idFrontFile,
+          idBack: idBackFile,
+          passport: passportFile,
+        })
+      ) {
+        return IDENTITY_DOCS_ERROR;
+      }
+    }
     return null;
   }
 
-  function publish() {
+  function goToPreview() {
+    const err = validateForm();
+    if (err) {
+      setError(err);
+      return;
+    }
+    setError(null);
+    setStep("onizleme");
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
+  async function publish() {
     if (!user || !draft.category) return;
     const err = validateForm();
     if (err) {
@@ -146,36 +253,85 @@ function NewListingWizard() {
       return;
     }
     setError(null);
-    const parsedFields: Record<string, string | number | boolean> = {};
-    for (const field of category?.fields ?? []) {
-      const raw = draft.fields[field.key];
-      if (raw === undefined || raw === "") continue;
-      parsedFields[field.key] = field.type === "number" ? Number(raw) : raw;
+    try {
+      const parsedFields: Record<string, string | number | boolean> = {};
+      for (const field of category?.fields ?? []) {
+        const raw = draft.fields[field.key];
+        if (raw === undefined || raw === "") continue;
+        parsedFields[field.key] = field.type === "number" ? Number(raw) : raw;
+      }
+      if (draft.category === "vasita" && draft.fields.altKategori) {
+        parsedFields.altKategori = draft.fields.altKategori;
+      }
+
+      let identityDocs: ListingIdentityDocs | undefined;
+      if (draft.category === "bakici-arayanlar") {
+        const [idFront, idBack, passport] = await Promise.all([
+          idFrontFile ? readFileAsAppFile(idFrontFile) : Promise.resolve(undefined),
+          idBackFile ? readFileAsAppFile(idBackFile) : Promise.resolve(undefined),
+          passportFile
+            ? readFileAsAppFile(passportFile)
+            : Promise.resolve(undefined),
+        ]);
+        identityDocs = {};
+        if (idFront) identityDocs.idFront = idFront;
+        if (idBack) identityDocs.idBack = idBack;
+        if (passport) identityDocs.passport = passport;
+      }
+
+      const photos = await resolveListingPhotos({
+        category: draft.category,
+        files: photoFiles,
+      });
+      const moderation = await gateListingPublish({
+        photos,
+        fileNames: photoFiles.map((f) => f?.name),
+        intendedStatus: "approved",
+        recipientEmail: user.email,
+        listingTitle: draft.title.trim(),
+      });
+      const status: ListingStatus = moderation.status;
+      const publishedAt = new Date().toISOString();
+      const created = createListing({
+        category: draft.category,
+        title: draft.title.trim(),
+        description: draft.description.trim(),
+        price: draft.price ? Number(draft.price) : 0,
+        city: draft.city,
+        district: draft.district,
+        photos,
+        contactName: draft.contactName.trim(),
+        contactPhone: draft.contactPhone.trim(),
+        sellerType: user.membershipKind,
+        sellerKurumsalType: user.kurumsalType,
+        sellerId: user.id,
+        status,
+        validUntil: freeListingValidUntil(publishedAt),
+        fields: parsedFields,
+        moderatedAt: publishedAt,
+        ...(moderation.rejectReason
+          ? { rejectReason: moderation.rejectReason }
+          : { rejectReason: undefined }),
+        ...(identityDocs ? { identityDocs } : {}),
+      });
+      if (moderation.flagged && moderation.rejectReason) {
+        setSuccess(false);
+        setRejectNotice(rejectionUserMessage(moderation.rejectReason));
+        setStep("yayin");
+        return;
+      }
+      setRejectNotice(null);
+      setSuccess(true);
+      setStep("yayin");
+      setTimeout(() => {
+        router.push(listingPath(created.id));
+      }, 2000);
+    } catch (publishErr) {
+      setError(
+        publishErr instanceof Error ? publishErr.message : "İlan yayınlanamadı.",
+      );
+      setStep("form");
     }
-    if (draft.category === "vasita" && draft.fields.altKategori) {
-      parsedFields.altKategori = draft.fields.altKategori;
-    }
-    const status: ListingStatus = "approved";
-    const created = createListing({
-      category: draft.category,
-      title: draft.title.trim(),
-      description: draft.description.trim(),
-      price: draft.price ? Number(draft.price) : 0,
-      city: draft.city,
-      district: draft.district,
-      photos: [`${draft.category}-new`, `${draft.category}-new-2`],
-      contactName: draft.contactName.trim(),
-      contactPhone: draft.contactPhone.trim(),
-      sellerType: user.membershipKind,
-      sellerKurumsalType: user.kurumsalType,
-      sellerId: user.id,
-      status,
-      fields: parsedFields,
-    });
-    setStep("yayin");
-    setTimeout(() => {
-      router.push(`/ilan/${created.id}`);
-    }, 900);
   }
 
   if (!ready || !user) {
@@ -191,6 +347,11 @@ function NewListingWizard() {
       <h1 className="hb-display text-3xl font-bold text-[var(--ink)]">İlan Ver</h1>
       <p className="mt-1 text-[var(--muted-foreground)]">
         Kategori seçin, detayları doldurun, önizleyin ve yayınlayın.
+      </p>
+      <p className="mt-3 rounded-lg border border-[color-mix(in_oklab,var(--lagoon)_25%,transparent)] bg-[color-mix(in_oklab,var(--mist)_70%,white)] px-3 py-2 text-sm text-[var(--ink)]">
+        <span className="font-semibold text-[var(--lagoon)]">{freeListingCopy.badge}</span>
+        {" — "}
+        {freeListingCopy.short} Ücretli paket gerekmez.
       </p>
 
       <ol className="mt-8 flex flex-wrap gap-2">
@@ -227,7 +388,27 @@ function NewListingWizard() {
                 key={c.slug}
                 type="button"
                 onClick={() => {
-                  setDraft((d) => ({ ...d, category: c.slug, fields: {} }));
+                  setDraft((d) => {
+                    const fields: Record<string, string> =
+                      c.slug === "vasita" && d.fields.altKategori
+                        ? { altKategori: d.fields.altKategori }
+                        : {};
+                    return {
+                      ...d,
+                      category: c.slug,
+                      // Keep Motorsiklet (etc.) alt when re-picking Vasıta from preset URL.
+                      fields,
+                    };
+                  });
+                  setIdFrontFile(null);
+                  setIdBackFile(null);
+                  setPassportFile(null);
+                  setPhotoFiles(
+                    resizePhotoFiles(
+                      emptyPhotoSlots(c.slug),
+                      photoSlotCountForCategory(c.slug),
+                    ),
+                  );
                   setStep("form");
                   setError(null);
                 }}
@@ -272,7 +453,9 @@ function NewListingWizard() {
                 id="title"
                 className="mt-1.5"
                 value={draft.title}
-                onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, title: e.target.value }))
+                }
               />
             </div>
             <div>
@@ -282,7 +465,9 @@ function NewListingWizard() {
                 className="mt-1.5"
                 rows={5}
                 value={draft.description}
-                onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, description: e.target.value }))
+                }
               />
             </div>
             <div>
@@ -292,7 +477,9 @@ function NewListingWizard() {
                 type="number"
                 className="mt-1.5"
                 value={draft.price}
-                onChange={(e) => setDraft({ ...draft, price: e.target.value })}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, price: e.target.value }))
+                }
                 placeholder="0 = fiyat sorulur"
               />
             </div>
@@ -302,8 +489,14 @@ function NewListingWizard() {
                 <Select
                   value={draft.city}
                   onValueChange={(city) => {
-                    const c = city ?? draft.city;
-                    setDraft({ ...draft, city: c, district: CITIES[c]?.[0] ?? "" });
+                    setDraft((d) => {
+                      const c = city ?? d.city;
+                      return {
+                        ...d,
+                        city: c,
+                        district: CITIES[c]?.[0] ?? "",
+                      };
+                    });
                   }}
                   items={Object.fromEntries(CITY_NAMES.map((c) => [c, c]))}
                 >
@@ -324,7 +517,10 @@ function NewListingWizard() {
                 <Select
                   value={draft.district}
                   onValueChange={(district) =>
-                    setDraft({ ...draft, district: district ?? draft.district })
+                    setDraft((d) => ({
+                      ...d,
+                      district: district ?? d.district,
+                    }))
                   }
                   items={Object.fromEntries(districts.map((d) => [d, d]))}
                 >
@@ -352,15 +548,17 @@ function NewListingWizard() {
                   <Select
                     value={draft.fields.altKategori || undefined}
                     onValueChange={(v) =>
-                      setDraft({
-                        ...draft,
+                      // Functional update — stale draft during remount/race must not
+                      // resurrect an old marka/model after alt kategori changes.
+                      setDraft((d) => ({
+                        ...d,
                         fields: {
-                          ...draft.fields,
+                          ...d.fields,
                           altKategori: v ?? "",
                           marka: "",
                           model: "",
                         },
-                      })
+                      }))
                     }
                     items={Object.fromEntries(
                       VASITA_SUBCATEGORIES.map((s) => [s.slug, s.name]),
@@ -379,8 +577,10 @@ function NewListingWizard() {
                   </Select>
                 </div>
               )}
-              {supportsBrandModelSearch(category.slug) && (
+              {supportsBrandModelSearch(category.slug) &&
+                (category.slug !== "vasita" || !!draft.fields.altKategori) && (
                 <BrandModelFields
+                  key={`bm-${category.slug}-${draft.fields.altKategori || "all"}`}
                   category={category.slug}
                   catalog={
                     category.slug === "vasita" && draft.fields.altKategori
@@ -390,16 +590,16 @@ function NewListingWizard() {
                   marka={draft.fields.marka ?? ""}
                   model={draft.fields.model ?? ""}
                   onMarkaChange={(v) =>
-                    setDraft({
-                      ...draft,
-                      fields: { ...draft.fields, marka: v, model: "" },
-                    })
+                    setDraft((d) => ({
+                      ...d,
+                      fields: { ...d.fields, marka: v, model: "" },
+                    }))
                   }
                   onModelChange={(v) =>
-                    setDraft({
-                      ...draft,
-                      fields: { ...draft.fields, model: v },
-                    })
+                    setDraft((d) => ({
+                      ...d,
+                      fields: { ...d.fields, model: v },
+                    }))
                   }
                   markaLabel={category.slug === "yedek-parca" ? "Uyumlu Marka" : "Marka"}
                   modelLabel={category.slug === "yedek-parca" ? "Uyumlu Model" : "Model"}
@@ -413,7 +613,10 @@ function NewListingWizard() {
                     return field.key !== "marka" && field.key !== "model";
                   })
                   .map((field) => (
-                  <div key={field.key}>
+                  <div
+                    key={field.key}
+                    className={field.type === "textarea" ? "sm:col-span-2" : undefined}
+                  >
                     <Label>
                       {field.label}
                       {field.required ? " *" : ""}
@@ -423,10 +626,7 @@ function NewListingWizard() {
                         <Select
                           value={draft.fields[field.key] || undefined}
                           onValueChange={(v) =>
-                            setDraft({
-                              ...draft,
-                              fields: { ...draft.fields, [field.key]: v ?? "" },
-                            })
+                            setDraftField(field.key, v ?? "")
                           }
                           items={Object.fromEntries(
                             field.options.map((o) => [o, o]),
@@ -443,16 +643,22 @@ function NewListingWizard() {
                             ))}
                           </SelectContent>
                         </Select>
+                      ) : field.type === "textarea" ? (
+                        <Textarea
+                          value={draft.fields[field.key] ?? ""}
+                          placeholder={field.placeholder}
+                          rows={3}
+                          onChange={(e) =>
+                            setDraftField(field.key, e.target.value)
+                          }
+                        />
                       ) : (
                         <Input
                           type={field.type === "number" ? "number" : "text"}
                           value={draft.fields[field.key] ?? ""}
                           placeholder={field.placeholder}
                           onChange={(e) =>
-                            setDraft({
-                              ...draft,
-                              fields: { ...draft.fields, [field.key]: e.target.value },
-                            })
+                            setDraftField(field.key, e.target.value)
                           }
                         />
                       )}
@@ -460,8 +666,43 @@ function NewListingWizard() {
                   </div>
                 ))}
               </div>
+              {draft.category === "vasita" && (
+                <AddressMap
+                  compact
+                  address={draft.fields.adres ?? ""}
+                  city={draft.city}
+                  district={draft.district}
+                />
+              )}
+              {draft.category === "bakici-arayanlar" && (
+                <IdentityDocsFields
+                  idPrefix="ilan-yeni"
+                  idFront={idFrontFile}
+                  idBack={idBackFile}
+                  passport={passportFile}
+                  onIdFront={setIdFrontFile}
+                  onIdBack={setIdBackFile}
+                  onPassport={setPassportFile}
+                />
+              )}
             </div>
           )}
+
+          <div className="hb-surface space-y-4 p-5">
+            <PhotoUploadFields
+              idPrefix="ilan-yeni-photo"
+              category={draft.category}
+              slotCount={photoSlotCount}
+              files={photoFiles}
+              onChange={(index, file) => {
+                setPhotoFiles((prev) => {
+                  const next = resizePhotoFiles(prev, photoSlotCount);
+                  next[index] = file;
+                  return next;
+                });
+              }}
+            />
+          </div>
 
           <div className="hb-surface grid gap-4 p-5 sm:grid-cols-2">
             <div>
@@ -470,7 +711,9 @@ function NewListingWizard() {
                 id="cname"
                 className="mt-1.5"
                 value={draft.contactName}
-                onChange={(e) => setDraft({ ...draft, contactName: e.target.value })}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, contactName: e.target.value }))
+                }
               />
             </div>
             <div>
@@ -479,7 +722,9 @@ function NewListingWizard() {
                 id="cphone"
                 className="mt-1.5"
                 value={draft.contactPhone}
-                onChange={(e) => setDraft({ ...draft, contactPhone: e.target.value })}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, contactPhone: e.target.value }))
+                }
               />
             </div>
           </div>
@@ -492,14 +737,7 @@ function NewListingWizard() {
             <Button
               type="button"
               className="bg-[var(--lagoon)] hover:bg-[#be185d]"
-              onClick={() => {
-                const err = validateForm();
-                if (err) setError(err);
-                else {
-                  setError(null);
-                  setStep("onizleme");
-                }
-              }}
+              onClick={goToPreview}
             >
               Önizlemeye geç
               <ArrowRight className="size-4" />
@@ -508,18 +746,38 @@ function NewListingWizard() {
         </div>
       )}
 
-      {step === "onizleme" && previewListing && draft.category && (
-        <div className="mt-8 space-y-6">
+      {step === "onizleme" && draft.category && (
+        <div className="mt-8 space-y-6" data-hb-step="onizleme">
           <div className="hb-surface overflow-hidden">
             <PhotoPlaceholder
-              category={draft.category}
+              category={draft.category as CategorySlug}
               title={draft.title}
               large
               className="aspect-[16/9] w-full"
+              src={photoObjectUrls.find(isRenderablePhoto)}
             />
+            {photoObjectUrls.some(isRenderablePhoto) && (
+              <div className="grid grid-cols-5 gap-2 border-t border-[color-mix(in_oklab,var(--lagoon)_12%,transparent)] bg-white/60 p-3">
+                {photoObjectUrls.map((src, i) =>
+                  isRenderablePhoto(src) ? (
+                    <PhotoPlaceholder
+                      key={`preview-thumb-${i}`}
+                      category={draft.category as CategorySlug}
+                      src={src}
+                      className="aspect-video rounded-lg"
+                    />
+                  ) : (
+                    <div
+                      key={`preview-empty-${i}`}
+                      className="aspect-video rounded-lg border border-dashed border-[color-mix(in_oklab,var(--lagoon)_22%,transparent)] bg-[var(--mist)]/50"
+                    />
+                  ),
+                )}
+              </div>
+            )}
             <div className="space-y-3 p-5">
               <div className="flex flex-wrap items-center gap-2">
-                <SellerBadge listing={previewListing} />
+                {previewListing && <SellerBadge listing={previewListing} />}
                 <span className="text-sm text-[var(--muted-foreground)]">
                   {draft.city} / {draft.district}
                 </span>
@@ -533,9 +791,22 @@ function NewListingWizard() {
               <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--muted-foreground)]">
                 {draft.description}
               </p>
+              {draft.category === "vasita" && draft.fields.renk && (
+                <p className="text-sm text-[var(--ink)]">
+                  Renk: <span className="font-medium">{draft.fields.renk}</span>
+                </p>
+              )}
               <p className="text-sm">
                 İletişim: {draft.contactName} · {draft.contactPhone}
               </p>
+              {draft.category === "vasita" && draft.fields.adres && (
+                <AddressMap
+                  compact
+                  address={draft.fields.adres}
+                  city={draft.city}
+                  district={draft.district}
+                />
+              )}
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -547,29 +818,70 @@ function NewListingWizard() {
               type="button"
               className="bg-[var(--lagoon)] hover:bg-[#be185d]"
               onClick={publish}
+              disabled={success}
             >
-              Yayınla
+              Kaydet ve yayınla
               <Check className="size-4" />
             </Button>
           </div>
           <p className="text-xs text-[var(--muted-foreground)]">
-            İlanınız otomatik onaylanır ve hemen yayına alınır.
+            {freeListingCopy.publishHint}
           </p>
         </div>
       )}
 
       {step === "yayin" && (
         <div className="mt-12 text-center">
-          <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-[var(--lagoon)] text-white">
-            <Check className="size-7" />
-          </div>
-          <h2 className="hb-display mt-4 text-2xl font-bold text-[var(--ink)]">
-            İlan onaylandı
-          </h2>
-          <p className="mt-2 text-[var(--muted-foreground)]">Detay sayfasına yönlendiriliyorsunuz…</p>
-          <Button asChild variant="outline" className="mt-6">
-            <Link href="/hesabim">Hesabıma git</Link>
-          </Button>
+          {rejectNotice ? (
+            <>
+              <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-red-600 text-white">
+                <X className="size-7" />
+              </div>
+              <p
+                className="mt-4 text-center text-base font-semibold text-red-700"
+                role="status"
+              >
+                {rejectNotice}
+              </p>
+              <p className="mt-2 text-[var(--muted-foreground)]">
+                Size e-posta ile de bildirildi. Uygun görsellerle düzenleyip tekrar
+                deneyebilirsiniz.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setRejectNotice(null);
+                    setStep("form");
+                  }}
+                >
+                  Görselleri düzenle
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/hesabim">Hesabıma git</Link>
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-green-600 text-white">
+                <Check className="size-7" />
+              </div>
+              <p
+                className="mt-4 text-center text-base font-semibold text-green-600"
+                role="status"
+              >
+                İlanınız Kontrol edildikten sonra yayınlanacaktır
+              </p>
+              <p className="mt-2 text-[var(--muted-foreground)]">
+                {freeListingCopy.detail} Detay sayfasına yönlendiriliyorsunuz…
+              </p>
+              <Button asChild variant="outline" className="mt-6">
+                <Link href="/hesabim">Hesabıma git</Link>
+              </Button>
+            </>
+          )}
         </div>
       )}
     </div>

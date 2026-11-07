@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { VASITA_SUBCATEGORIES } from "@/lib/vasita-subcategories";
+import { ListingsLoading } from "@/components/listings/listing-states";
 import { VasitaSubPageClient } from "./vasita-sub-page-client";
 
 export function generateStaticParams() {
@@ -11,5 +13,9 @@ export default async function VasitaSubcategoryPage({
   params: Promise<{ sub: string }>;
 }) {
   const { sub } = await params;
-  return <VasitaSubPageClient subSlug={sub} />;
+  return (
+    <Suspense fallback={<ListingsLoading />}>
+      <VasitaSubPageClient subSlug={sub} />
+    </Suspense>
+  );
 }
